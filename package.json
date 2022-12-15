@@ -1,0 +1,32 @@
+{
+	"name": "ruta-monorepo",
+	"type": "module",
+	"private": "true",
+	"version": "1.0.0",
+	"prettier": "@ydcjeff/configs/prettier",
+	"scripts": {
+		"fmt": "prettier -w --ignore-path .gitignore --plugin prettier-plugin-svelte .",
+		"fmt-check": "prettier -c --ignore-path .gitignore --plugin prettier-plugin-svelte .",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"postinstall": "git config core.hooksPath .githooks"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "1.0.8",
+		"@types/node": "18.7.21",
+		"@ydcjeff/configs": "0.4.16",
+		"prettier": "2.7.1",
+		"prettier-plugin-svelte": "2.7.0",
+		"ruta-core": "workspace:*",
+		"solid-js": "1.5.6",
+		"solid-ruta": "workspace:*",
+		"svelte": "3.50.1",
+		"svelte-ruta": "workspace:*",
+		"urlpattern-polyfill": "5.0.9",
+		"vite": "3.1.3",
+		"vite-plugin-solid": "2.3.8",
+		"vitest": "0.23.4"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

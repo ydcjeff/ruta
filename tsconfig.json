@@ -1,0 +1,10 @@
+{
+	"extends": "@ydcjeff/configs/tsconfig",
+	"include": ["modules/**/*.js"],
+	"exclude": ["modules/**/*.test.js", "modules/**/*.d.ts"],
+	"compilerOptions": {
+		"moduleResolution": "node",
+		"emitDeclarationOnly": true,
+		"declaration": true
+	}
+}

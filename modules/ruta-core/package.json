@@ -1,0 +1,15 @@
+{
+	"name": "ruta-core",
+	"version": "0.1.0",
+	"type": "module",
+	"author": "Jeff Yang",
+	"license": "MIT",
+	"keywords": ["router", "ruta"],
+	"types": "./index.d.ts",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"import": "./mod.js"
+		}
+	}
+}

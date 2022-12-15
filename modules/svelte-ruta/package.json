@@ -1,0 +1,24 @@
+{
+	"name": "svelte-ruta",
+	"type": "module",
+	"version": "0.1.0",
+	"description": "Router for Svelte",
+	"author": "Jeff Yang",
+	"license": "MIT",
+	"keywords": [
+		"router",
+		"svelte",
+		"sveltejs",
+		"svelte-ruta"
+	],
+	"types": "./index.d.ts",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"import": "./mod.js"
+		}
+	},
+	"peerDependencies": {
+		"svelte": "^3.50.1"
+	}
+}
