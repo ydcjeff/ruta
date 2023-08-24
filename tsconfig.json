@@ -1,10 +1,13 @@
 {
-	"extends": "@ydcjeff/configs/tsconfig",
-	"include": ["modules/**/*.js"],
-	"exclude": ["modules/**/*.test.js", "modules/**/*.d.ts"],
+	"extends": "@tsconfig/strictest/tsconfig.json",
+	"include": ["src"],
 	"compilerOptions": {
-		"moduleResolution": "node",
+		"lib": ["esnext"],
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
 		"emitDeclarationOnly": true,
-		"declaration": true
+		"declaration": true,
+		"verbatimModuleSyntax": true
 	}
 }
