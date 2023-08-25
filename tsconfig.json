@@ -1,6 +1,7 @@
 {
 	"extends": "@tsconfig/strictest/tsconfig.json",
-	"include": ["src"],
+	"include": ["src", "*.js"],
+	"exclude": ["dist"],
 	"compilerOptions": {
 		"lib": ["esnext"],
 		"target": "esnext",

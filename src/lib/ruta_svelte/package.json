@@ -1,0 +1,24 @@
+{
+	"name": "ruta-svelte",
+	"version": "0.0.1",
+	"type": "module",
+	"author": "Jeff Yang",
+	"license": "MIT",
+	"keywords": [
+		"router",
+		"ruta",
+		"ruta-svelte"
+	],
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"import": "./mod.js"
+		}
+	},
+	"dependencies": {
+		"ruta-core": "workspace:*"
+	},
+	"peerDependencies": {
+		"svelte": "^4.0.0"
+	}
+}
