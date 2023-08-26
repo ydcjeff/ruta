@@ -127,6 +127,12 @@ class Ruta {
 	 */
 	async #match_route(url) {
 		url = new URL(url);
+
+		// exit if navigating to the same URL
+		if (this.#from?.url?.href === url.href) {
+			return;
+		}
+
 		const routes = this.#options.routes;
 
 		for (const path in routes) {
@@ -147,8 +153,8 @@ class Ruta {
 					pathname: { groups },
 				} = match;
 
-				this.#from = this.#to;
 				this.#to = {
+					url,
 					path,
 					params: route.parse_params?.(groups) ?? {},
 					search: route.parse_search?.(url.searchParams) ?? {},
@@ -184,6 +190,8 @@ class Ruta {
 					);
 				}
 
+				// store old route
+				this.#from = this.#to;
 				break;
 			}
 		}
