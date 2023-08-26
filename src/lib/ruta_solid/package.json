@@ -1,0 +1,24 @@
+{
+	"name": "ruta-solid",
+	"version": "0.0.1",
+	"type": "module",
+	"author": "Jeff Yang",
+	"license": "MIT",
+	"keywords": [
+		"router",
+		"ruta",
+		"ruta-solid"
+	],
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"import": "./mod.jsx"
+		}
+	},
+	"dependencies": {
+		"ruta-core": "workspace:*"
+	},
+	"peerDependencies": {
+		"solid-js": "^1.7.11"
+	}
+}

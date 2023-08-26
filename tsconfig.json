@@ -9,6 +9,8 @@
 		"moduleResolution": "bundler",
 		"emitDeclarationOnly": true,
 		"declaration": true,
-		"verbatimModuleSyntax": true
+		"verbatimModuleSyntax": true,
+		"jsx": "preserve",
+		"jsxImportSource": "solid-js"
 	}
 }
