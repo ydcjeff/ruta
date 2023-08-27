@@ -4,16 +4,12 @@ import { createStore } from 'solid-js/store';
 import { Dynamic } from 'solid-js/web';
 
 export * from 'ruta-core';
-export {
-	RutaSolid,
-	use_router,
-	use_route,
-	router_provider as RouterProvider,
-	RouteMatches,
-};
+export { RutaSolid, use_router, use_route, RouteMatches, RouterContext };
 
-const DEPTH_CONTEXT = createContext(1);
-const ROUTER_CONTEXT = createContext();
+const DepthContext = createContext(1);
+
+/** @type {import('solid-js').Context<RutaSolid | undefined>} */
+const RouterContext = createContext();
 
 class RutaSolid extends Ruta {
 	constructor(options) {
@@ -27,37 +23,27 @@ class RutaSolid extends Ruta {
 		});
 
 		this.route = route;
-		this.on_after_navigate((to) => {
-			set_route(to);
-		});
+		this.on_after_navigate((to) => set_route(to));
 	}
 }
 
-function router_provider(props) {
-	return (
-		<ROUTER_CONTEXT.Provider value={props.ruta}>
-			{props.children}
-		</ROUTER_CONTEXT.Provider>
-	);
-}
-
 function use_router() {
-	return useContext(ROUTER_CONTEXT);
+	return /** @type {RutaSolid} */ (useContext(RouterContext));
 }
 
 function use_route() {
-	return useContext(ROUTER_CONTEXT).route;
+	return /** @type {RutaSolid} */ (useContext(RouterContext)).route;
 }
 
 function RouteMatches() {
 	const route = use_route();
-	const depth = useContext(DEPTH_CONTEXT);
+	const depth = useContext(DepthContext);
 
 	const component = createMemo(() => route.pages[route.pages.length - depth]);
 	const has_children = createMemo(() => route.pages.length > depth);
 
 	return (
-		<DEPTH_CONTEXT.Provider value={depth + 1}>
+		<DepthContext.Provider value={depth + 1}>
 			<Show when={component()}>
 				{(c) => (
 					<Dynamic component={c()}>
@@ -67,6 +53,6 @@ function RouteMatches() {
 					</Dynamic>
 				)}
 			</Show>
-		</DEPTH_CONTEXT.Provider>
+		</DepthContext.Provider>
 	);
 }

@@ -1,7 +1,7 @@
 import {
 	RouteMatches,
 	RutaSolid,
-	RouterProvider,
+	RouterContext,
 	define_routes,
 } from 'ruta-solid';
 import { render } from 'solid-js/web';
@@ -32,9 +32,9 @@ function init_solid_app() {
 	ruta.go().then(() => {
 		render(
 			() => (
-				<RouterProvider ruta={ruta}>
+				<RouterContext.Provider value={ruta}>
 					<RouteMatches />
-				</RouterProvider>
+				</RouterContext.Provider>
 			),
 			/** @type {HTMLElement} */ (document.getElementById('app')),
 		);
