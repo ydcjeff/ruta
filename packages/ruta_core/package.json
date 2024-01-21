@@ -16,6 +16,7 @@
 		}
 	},
 	"dependencies": {
-		"esm-env": "^1.0.0"
+		"esm-env": "^1.0.0",
+		"urlpattern-polyfill": "9.0.0"
 	}
 }
