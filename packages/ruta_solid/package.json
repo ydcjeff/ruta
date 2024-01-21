@@ -20,5 +20,8 @@
 	},
 	"peerDependencies": {
 		"solid-js": "^1.7.11"
+	},
+	"scripts": {
+		"typecheck": "tsc"
 	}
 }

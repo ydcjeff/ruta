@@ -15,6 +15,7 @@
 		"preview-solid": "pnpm run --filter play-ruta-solid preview",
 		"fmt": "prettier -w --ignore-path .gitignore --plugin prettier-plugin-svelte .",
 		"fmt-check": "prettier -c --ignore-path .gitignore --plugin prettier-plugin-svelte .",
+		"typecheck": "pnpm run -r --parallel typecheck",
 		"test": "vitest",
 		"postinstall": "git config core.hooksPath .githooks"
 	},
