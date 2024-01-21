@@ -18,27 +18,19 @@ class RutaSvelte extends Ruta {
 		pages: [],
 	});
 
-	constructor(options) {
+	constructor(options = {}) {
 		super(options);
-		this.on_after_navigate((to) => {
+		this.after((to) => {
 			this.#route.set(to);
 		});
 	}
 
-	/**
-	 * Install RutaSvelte plugin.
-	 */
 	install() {
 		setContext(ROUTER_SYMBOL, this);
 		setContext(ROUTE_SYMBOL, { subscribe: this.#route.subscribe });
 	}
 }
 
-/**
- * Get RutaSvelte instance from Svelte app's context.
- *
- * @returns {RutaSvelte}
- */
 function get_router() {
 	return getContext(ROUTER_SYMBOL);
 }

@@ -8,11 +8,10 @@ export { RutaSolid, use_router, use_route, RouteMatches, RouterContext };
 
 const DepthContext = createContext(1);
 
-/** @type {import('solid-js').Context<RutaSolid | undefined>} */
 const RouterContext = createContext();
 
 class RutaSolid extends Ruta {
-	constructor(options) {
+	constructor(options = {}) {
 		super(options);
 
 		const [route, set_route] = createStore({
@@ -23,16 +22,16 @@ class RutaSolid extends Ruta {
 		});
 
 		this.route = route;
-		this.on_after_navigate((to) => set_route(to));
+		this.after((to) => set_route(to));
 	}
 }
 
 function use_router() {
-	return /** @type {RutaSolid} */ (useContext(RouterContext));
+	return useContext(RouterContext);
 }
 
 function use_route() {
-	return /** @type {RutaSolid} */ (useContext(RouterContext)).route;
+	return useContext(RouterContext).route;
 }
 
 function RouteMatches() {

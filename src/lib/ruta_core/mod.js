@@ -1,7 +1,6 @@
-// @ts-check
 import { BROWSER, DEV } from 'esm-env';
 
-export { Ruta, define_routes };
+export { Ruta, define_route };
 
 const PATTERN_SYMBOL = Symbol(DEV ? 'pattern' : '');
 const PAGES_SYMBOL = Symbol(DEV ? 'pages' : '');
@@ -10,21 +9,24 @@ const RESOLVED_SYMBOL = Symbol(DEV ? 'resolved' : '');
 class Ruta {
 	/** router is ready for subsequent navigations. */
 	#ok = false;
+	#base;
+	#context;
 
+	/** @type {Record<string, import('./index').RouteOptions>} */
+	#routes = {};
 	#from;
 	#to;
 
-	#base;
-	#routes;
-	#context;
-
 	// hooks
 	/** @type {NavigationHook[]} */
-	#before_navigate_hooks = [];
+	#before_hooks = [];
 
 	/** @type {NavigationHook[]} */
-	#after_navigate_hooks = [];
+	#after_hooks = [];
 
+	/**
+	 * @param {import('./index').RutaOptions} options
+	 */
 	constructor(options = {}) {
 		this.#base = normalise_base(options.base || '');
 		this.#context = options.context || {};
@@ -47,30 +49,32 @@ class Ruta {
 		}
 	}
 
-	add(path, children) {
-		for (const key in children) {
-			const parent = this.#routes[path];
-			const child = children[key];
+	/** @type {import('./index').Ruta['add']} */
+	add(parent_path, children) {
+		for (const child of children) {
+			const parent = this.#routes[parent_path];
+			// @ts-expect-error private property
 			if (!child[PAGES_SYMBOL]) {
+				// @ts-expect-error private property
 				child[PAGES_SYMBOL] = [child.page];
 			}
 			if (parent) {
+				// @ts-expect-error private property
 				child[PAGES_SYMBOL].push(parent.page);
 			}
-			this.#routes[join_paths(path, key)] = child;
+			this.#routes[join_paths(parent_path, child.path)] = child;
 		}
-		return this;
+		return /** @type {any} */ (this);
 	}
 
-	/**
-	 * Navigate to a route. This is the starting point of a full navigation.
-	 */
-	async go(to = BROWSER ? location.href : '/') {
+	/** @type {import('./index').Ruta['go']} */
+	async go(to) {
+		const url = this.to_href(to);
 		if (BROWSER) {
-			to = this.to_href(to);
-			await navigation.navigate(to);
+			// @ts-expect-error experimental API
+			await navigation.navigate(url);
 		} else {
-			await this.#match_route(to);
+			await this.#match_route(url);
 		}
 
 		if (!this.#ok) {
@@ -78,43 +82,43 @@ class Ruta {
 		}
 	}
 
-	/**
-	 * Build a link string. Useful for building links.
-	 */
+	/** @type {import('./index').Ruta['to_href']} */
 	to_href(to) {
 		if (typeof to === 'string') {
-			if (BROWSER && to.startsWith(location.origin)) {
-				to = to.replace(location.origin, '');
-			}
-			if (DEV && to.startsWith('http')) {
-				error('"to" should not start with http.');
-			}
-			return join_paths('/', to);
+			// base can or cannot contain prefix `/`, so add manually.
+			return join_paths('/', this.#base, to);
 		}
 
-		const { path, params, search } = to;
-		const sp = new URLSearchParams(search);
-		// TODO: replace path params with params value
-		return join_paths('/', this.#base, path + '?' + sp);
+		let { path, params, search } = to;
+		if (Object.keys(params).length) {
+			for (const key in params) {
+				path = path.replace(`:${key}`, params[key]);
+			}
+		}
+		const has_search = Object.keys(search).length;
+		return join_paths(
+			// base can or cannot contain prefix `/`, so add manually.
+			'/',
+			this.#base,
+			`${path}${has_search ? `?${new URLSearchParams(search)}` : ''}`,
+		);
 	}
 
-	/**
-	 * Get router context. Useful for injecting dependencies.
-	 */
+	/** @type {import('./index').Ruta['context']} */
 	get context() {
 		return this.#context;
 	}
 
 	// navigation hooks
 
-	/** @param {NavigationHook} hook */
-	on_before_navigate(hook) {
-		return this.#add_hook(this.#before_navigate_hooks, hook);
+	/** @type {import('./index').Ruta['before']} */
+	before(hook) {
+		return this.#add_hook(this.#before_hooks, hook);
 	}
 
-	/** @param {NavigationHook} hook */
-	on_after_navigate(hook) {
-		return this.#add_hook(this.#after_navigate_hooks, hook);
+	/** @type {import('./index').Ruta['after']} */
+	after(hook) {
+		return this.#add_hook(this.#after_hooks, hook);
 	}
 
 	/**
@@ -132,8 +136,7 @@ class Ruta {
 		}
 		hooks.push(hook);
 		return () => {
-			const i = hooks.indexOf(hook);
-			hooks.splice(i, 1);
+			hooks.splice(hooks.indexOf(hook), 1);
 		};
 	}
 
@@ -156,6 +159,7 @@ class Ruta {
 
 			const pattern =
 				route[PATTERN_SYMBOL] ||
+				// @ts-expect-error experimental API
 				(route[PATTERN_SYMBOL] = new URLPattern({
 					// base can or cannot contain prefix `/`, so add manually.
 					pathname: join_paths('/', this.#base, path),
@@ -178,9 +182,9 @@ class Ruta {
 				};
 
 				// call before navigate hooks if available
-				if (this.#before_navigate_hooks.length) {
+				if (this.#before_hooks.length) {
 					await Promise.all(
-						this.#before_navigate_hooks.map((h) => h(this.#to, this.#from)),
+						this.#before_hooks.map((h) => h(this.#to, this.#from)),
 					);
 				}
 
@@ -200,9 +204,9 @@ class Ruta {
 				this.#to.pages = route[PAGES_SYMBOL];
 
 				// call after navigate hooks if available
-				if (this.#after_navigate_hooks.length) {
+				if (this.#after_hooks.length) {
 					await Promise.all(
-						this.#after_navigate_hooks.map((h) => h(this.#to, this.#from)),
+						this.#after_hooks.map((h) => h(this.#to, this.#from)),
 					);
 				}
 
@@ -214,35 +218,12 @@ class Ruta {
 	}
 }
 
-function define_routes(parent, children) {
-	const { path: parent_path, page, error, parse_params, parse_search } = parent;
-
-	const new_routes = {
-		[parent_path]: {
-			page,
-			error,
-			parse_params,
-			parse_search,
-			[PAGES_SYMBOL]: [page],
-		},
-	};
-
-	for (const child_path in children) {
-		const full_path = join_paths(parent_path, child_path);
-		// store child route reference in new routes
-		const child = (new_routes[full_path] = children[child_path]);
-
-		// add internal pages to render the DOM tree
-		(child[PAGES_SYMBOL] || (child[PAGES_SYMBOL] = [child.page])).push(
-			parent.page,
-		);
-	}
-
-	return new_routes;
+/** @type {import('./index').DefineRoute} */
+function define_route(route) {
+	return route;
 }
 
 const MULTI_SLASH_RE = /\/{2,}/g;
-
 /**
  * Joins the given `paths`, and replaces many `/` with single `/`.
  *
@@ -270,11 +251,6 @@ function warn(msg) {
 	console.warn(`[ruta warn]: ${msg}`);
 }
 
-/** @param {string} msg */
-function error(msg) {
-	throw new Error(`[ruta error]: ${msg}`);
-}
-
 /**
- * @typedef {import('./types').NavigationHook} NavigationHook
+ * @typedef {import('./index').NavigationHook} NavigationHook
  */

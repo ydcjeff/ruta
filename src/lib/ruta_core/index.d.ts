@@ -127,7 +127,7 @@ export class Ruta<
 	constructor(options?: RutaOptions<TBase, TContext>);
 
 	/**
-	 * Get router context.
+	 * Get router context. Useful for injecting dependencies.
 	 */
 	get context(): TContext;
 
@@ -158,14 +158,14 @@ export class Ruta<
 	>;
 
 	/**
-	 * Make a navigation.
+	 * Navigate to a route. This is the starting point of a full navigation.
 	 */
 	go<TPath extends TPaths>(
 		to: StaticPaths<TPath> | ToOptions<TPath>,
 	): Promise<void>;
 
 	/**
-	 * Make a href-string.
+	 * Build a link string. Useful for building links.
 	 */
 	to_href<TPath extends TPaths>(
 		to: StaticPaths<TPath> | ToOptions<TPath>,
@@ -182,8 +182,6 @@ export class Ruta<
 	after(hook: NavigationHook): HookStopHandler;
 }
 
-export function use_router(): Omit<RegisteredRouter, 'add'>;
-
 export function define_route<
 	const TPath extends string = string,
 	TParams extends AnyObj = {},
@@ -191,3 +189,5 @@ export function define_route<
 >(
 	route: RouteOptions<TPath, TParams, TSearch>,
 ): RouteOptions<TPath, TParams, TSearch>;
+
+type DefineRoute = typeof define_route;
