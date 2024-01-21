@@ -1,5 +1,7 @@
 import { createApp } from 'vue';
-import { RutaVue, RouteMatches, define_routes } from 'ruta-vue';
+import { RutaVue, RouteMatches } from 'ruta-vue';
+
+import { use_router } from 'ruta-core';
 
 export { init_vue_app };
 
@@ -29,3 +31,44 @@ function init_vue_app() {
 
 	ruta.go().then(() => app.mount('#app'));
 }
+
+const ruta = use_router();
+
+ruta.to_href('/groups');
+
+ruta.to_href({
+	path: '/groups/:group_id/problems/:problem_id',
+	params: {
+		group_id: 1,
+		problem_id: 1,
+	},
+	search: {
+		date: '2024-01-01',
+		sorted: true,
+		// group_name: null,
+	},
+});
+
+ruta.go({
+	path: '/groups',
+	search: {
+		sorted: false,
+	},
+});
+
+ruta.go({
+	path: '/groups/:group_id/problems',
+	params: {
+		group_id: 2,
+	},
+	search: {
+		date: '',
+		sorted: true,
+	},
+});
+
+ruta.go({
+	path: '/groups/:group_id/members',
+	params: { group_id: 3 },
+	search: { dob: '1998-09-12', sorted: !1 },
+});

@@ -14,7 +14,9 @@ class Ruta {
 	#from;
 	#to;
 
-	#options;
+	#base;
+	#routes;
+	#context;
 
 	// hooks
 	/** @type {NavigationHook[]} */
@@ -24,8 +26,8 @@ class Ruta {
 	#after_navigate_hooks = [];
 
 	constructor(options = {}) {
-		options.base = normalise_base(options.base || '');
-		this.#options = options;
+		this.#base = normalise_base(options.base || '');
+		this.#context = options.context || {};
 
 		if (BROWSER) {
 			// @ts-expect-error experimental API
@@ -43,6 +45,21 @@ class Ruta {
 				});
 			});
 		}
+	}
+
+	add(path, children) {
+		for (const key in children) {
+			const parent = this.#routes[path];
+			const child = children[key];
+			if (!child[PAGES_SYMBOL]) {
+				child[PAGES_SYMBOL] = [child.page];
+			}
+			if (parent) {
+				child[PAGES_SYMBOL].push(parent.page);
+			}
+			this.#routes[join_paths(path, key)] = child;
+		}
+		return this;
 	}
 
 	/**
@@ -78,14 +95,14 @@ class Ruta {
 		const { path, params, search } = to;
 		const sp = new URLSearchParams(search);
 		// TODO: replace path params with params value
-		return join_paths('/', this.#options.base, path + '?' + sp);
+		return join_paths('/', this.#base, path + '?' + sp);
 	}
 
 	/**
 	 * Get router context. Useful for injecting dependencies.
 	 */
 	get context() {
-		return this.#options.context;
+		return this.#context;
 	}
 
 	// navigation hooks
@@ -133,8 +150,7 @@ class Ruta {
 			return;
 		}
 
-		const routes = this.#options.routes;
-
+		const routes = this.#routes;
 		for (const path in routes) {
 			const route = routes[path];
 
@@ -142,7 +158,7 @@ class Ruta {
 				route[PATTERN_SYMBOL] ||
 				(route[PATTERN_SYMBOL] = new URLPattern({
 					// base can or cannot contain prefix `/`, so add manually.
-					pathname: join_paths('/', this.#options.base, path),
+					pathname: join_paths('/', this.#base, path),
 				}));
 
 			const match = pattern.exec(url);
