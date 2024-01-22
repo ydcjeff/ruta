@@ -1,11 +1,42 @@
 <script setup lang="ts">
-const links = ['/', '/params/123', '/params/456'];
+import { use_router } from 'ruta-vue';
+
+const router = use_router();
 </script>
 
 <template>
 	<h1>root layout {{ Date.now() }}</h1>
 
-	<a v-for="l in links" :href="l">{{ l }}</a>
+	<a
+		:href="
+			router.to_href({
+				path: '/home',
+			})
+		"
+		>home</a
+	>
+	<a
+		:href="
+			router.to_href({
+				path: '/params/:param_id',
+				params: {
+					param_id: 123,
+				},
+			})
+		"
+		>123</a
+	>
+	<a
+		:href="
+			router.to_href({
+				path: '/params/:param_id',
+				params: {
+					param_id: 456,
+				},
+			})
+		"
+		>456</a
+	>
 
 	<slot />
 </template>

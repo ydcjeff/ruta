@@ -41,18 +41,23 @@ type ToOptions<
 	_AllSearch = RegisteredRouter['ROUTES'][TPath]['search'],
 > = {
 	path: TPath;
-} & (keyof _AllParams extends never ? {} : { params: _AllParams }) &
-	(keyof _AllSearch extends never ? {} : { search: _AllSearch });
+} & (keyof _AllParams extends never
+	? { params?: never }
+	: { params: _AllParams }) &
+	(keyof _AllSearch extends never
+		? { search?: never }
+		: { search: _AllSearch });
 
 type Route<
 	TRouteOptions extends RouteOptions = RouteOptions,
 	THref extends string = string,
 	TAllParams extends AnyObj = {},
 	TAllSearch extends AnyObj = {},
-> = TRouteOptions & {
+> = Pick<TRouteOptions, 'path'> & {
 	href: THref;
 	params: TAllParams;
 	search: TAllSearch;
+	pages: RegisteredComponent[];
 };
 
 type RouteOptions<
@@ -62,13 +67,15 @@ type RouteOptions<
 	_ParsedParams = ParseParams<TPath>,
 > = {
 	path: TPath;
-	page: MaybePromise<RegisteredComponent>;
-	error?: MaybePromise<RegisteredComponent>;
+	page: RegisteredComponent | (() => Promise<RegisteredComponent>);
+	error?: RegisteredComponent | (() => Promise<RegisteredComponent>);
 	parse_search?(search: URLSearchParams): TSearch;
 	before?(): MaybePromise<void>;
 	after?(): MaybePromise<void>;
 } & (keyof _ParsedParams extends never
-	? {}
+	? {
+			// parse_params?: never;
+		}
 	: {
 			parse_params(
 				params: _ParsedParams,
@@ -78,14 +85,8 @@ type RouteOptions<
 		});
 
 export type NavigationHook = (
-	to: Pick<
-		RegisteredRouter['ROUTES'][keyof RegisteredRouter['ROUTES']],
-		'href' | 'params' | 'path' | 'search'
-	>,
-	from: Pick<
-		RegisteredRouter['ROUTES'][keyof RegisteredRouter['ROUTES']],
-		'href' | 'params' | 'path' | 'search'
-	>,
+	to: RegisteredRouter['ROUTES'][keyof RegisteredRouter['ROUTES']],
+	from: RegisteredRouter['ROUTES'][keyof RegisteredRouter['ROUTES']],
 ) => MaybePromise<void>;
 
 export interface RutaOptions<
@@ -150,7 +151,7 @@ export class Ruta<
 			[C in TChildren[number] as JoinPaths<TParentPath, C['path']>]: Route<
 				C,
 				JoinPaths<TParentPath, C['path']>,
-				// @ts-expect-error conditional parameter
+				// @ts-expect-error conditional type
 				_ParentRoute['params'] & MyReturnType<C['parse_params']>,
 				_ParentRoute['search'] & MyReturnType<NonNullable<C['parse_search']>>
 			>;
@@ -161,7 +162,7 @@ export class Ruta<
 	 * Navigate to a route. This is the starting point of a full navigation.
 	 */
 	go<TPath extends TPaths>(
-		to: StaticPaths<TPath> | ToOptions<TPath>,
+		to?: StaticPaths<TPath> | ToOptions<TPath>,
 	): Promise<void>;
 
 	/**
@@ -189,5 +190,3 @@ export function define_route<
 >(
 	route: RouteOptions<TPath, TParams, TSearch>,
 ): RouteOptions<TPath, TParams, TSearch>;
-
-type DefineRoute = typeof define_route;

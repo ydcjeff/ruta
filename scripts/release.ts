@@ -12,7 +12,7 @@ import {
 } from 'https://deno.land/std@0.152.0/semver/mod.ts';
 
 async function main() {
-	const modules = Array.from(Deno.readDirSync('./modules')).map((v) => v.name);
+	const modules = Array.from(Deno.readDirSync('./packages')).map((v) => v.name);
 
 	const increments = [
 		'major',

@@ -4,9 +4,9 @@
 import '../../style.css';
 
 import App from './app.svelte';
-import { RutaSvelte, define_route } from 'ruta-svelte';
+import { Ruta, define_route } from 'ruta-svelte';
 
-const ruta = new RutaSvelte()
+const ruta = new Ruta()
 	.add('', [
 		define_route({
 			path: '/',
@@ -27,9 +27,15 @@ const ruta = new RutaSvelte()
 		}),
 	]);
 
-ruta.go('/').then(() => {
+ruta.go().then(() => {
 	new App({
 		target: document.getElementById('app')!,
 		props: { ruta },
 	});
 });
+
+declare module 'ruta-svelte' {
+	interface Register {
+		router: typeof ruta;
+	}
+}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { use_route } from 'ruta-vue';
 
-const route = use_route();
+const route = use_route('/params/:param_id');
 </script>
 
 <template>

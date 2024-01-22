@@ -1,37 +1,12 @@
-import { Ruta } from 'ruta-core';
-import { inject, readonly, shallowReactive } from 'vue';
+import { inject, markRaw, readonly, shallowReactive } from 'vue';
 
 export * from 'ruta-core';
 export { default as RouteMatches } from './route_matches.vue';
-export { RutaVue, use_router, use_route };
+export { use_router, use_route, install_router };
 
 const ROUTER_SYMBOL = Symbol();
 
 const ROUTE_SYMBOL = Symbol();
-
-class RutaVue extends Ruta {
-	#route = shallowReactive({
-		path: '/',
-		params: {},
-		search: {},
-		pages: [],
-	});
-
-	constructor(options = {}) {
-		super(options);
-		this.after((to) => {
-			for (const key in to) {
-				// TODO update route
-			}
-		});
-	}
-
-	/** @type {import('./index').RutaVue['install']} */
-	install(app) {
-		app.provide(ROUTER_SYMBOL, this);
-		app.provide(ROUTE_SYMBOL, readonly(this.#route));
-	}
-}
 
 function use_router() {
 	return inject(ROUTER_SYMBOL);
@@ -39,4 +14,27 @@ function use_router() {
 
 function use_route() {
 	return inject(ROUTE_SYMBOL);
+}
+
+/** @type {import('./index').install_router} */
+function install_router(app, router) {
+	const route = shallowReactive(
+		/** @type {import('./index').Route} */ ({
+			href: '/',
+			pages: [],
+			params: {},
+			path: '/',
+			search: {},
+		}),
+	);
+
+	router.after((to) => {
+		for (const key in to) {
+			// @ts-expect-error
+			route[key] = key === 'pages' ? markRaw(to[key]) : to[key];
+		}
+	});
+
+	app.provide(ROUTER_SYMBOL, router);
+	app.provide(ROUTE_SYMBOL, readonly(route));
 }

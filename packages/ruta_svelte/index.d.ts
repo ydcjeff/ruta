@@ -1,5 +1,5 @@
-import { SvelteComponent } from 'svelte';
-import { Ruta } from 'ruta-core';
+import type { SvelteComponent } from 'svelte';
+import type { Ruta, RegisteredRouter } from 'ruta-core';
 
 declare module 'ruta-core' {
 	interface Register {
@@ -9,15 +9,12 @@ declare module 'ruta-core' {
 
 export * from 'ruta-core';
 
-export class RutaSvelte extends Ruta {
-	/**
-	 * Install RutaSvelte plugin.
-	 */
-	install(): void;
-}
+export class RouteMatches extends SvelteComponent {}
 
-export { default as RouteMatches } from './route_matches.svelte';
+export function get_router(): Omit<RegisteredRouter, 'add'>;
 
-export function get_router(): Omit<RutaSvelte, 'add'>;
+export function get_route<
+	T extends keyof RegisteredRouter['ROUTES'] = keyof RegisteredRouter['ROUTES'],
+>(route?: T): RegisteredRouter['ROUTES'][T];
 
-export function get_route(): any;
+export function install_router(router: Ruta): void;
