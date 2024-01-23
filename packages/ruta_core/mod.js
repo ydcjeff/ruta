@@ -1,7 +1,13 @@
 import 'urlpattern-polyfill';
 
 import { BROWSER, DEV } from 'esm-env';
-import { PAGES_SYMBOL, RESOLVED_SYMBOL, PATTERN_SYMBOL } from './constants.js';
+import {
+	PAGES_SYMBOL,
+	RESOLVED_SYMBOL,
+	PATTERN_SYMBOL,
+	IMMUTABLE_EMPTY_ARRAY,
+	IMMUTABLE_EMPTY_OBJ,
+} from './constants.js';
 
 export { Ruta, define_route, create_routes };
 
@@ -18,9 +24,21 @@ class Ruta {
 	#routes = {};
 
 	/** @type {Route} */
-	#from = { href: '', pages: [], params: {}, path: '', search: {} };
+	#from = {
+		href: '',
+		pages: IMMUTABLE_EMPTY_ARRAY,
+		params: IMMUTABLE_EMPTY_OBJ,
+		path: '',
+		search: IMMUTABLE_EMPTY_OBJ,
+	};
 	/** @type {Route} */
-	#to = { href: '/', pages: [], params: {}, path: '/', search: {} };
+	#to = {
+		href: '/',
+		pages: IMMUTABLE_EMPTY_ARRAY,
+		params: IMMUTABLE_EMPTY_OBJ,
+		path: '/',
+		search: IMMUTABLE_EMPTY_OBJ,
+	};
 
 	// hooks
 	/** @type {NavigationHook[]} */
@@ -29,11 +47,21 @@ class Ruta {
 	/** @type {NavigationHook[]} */
 	#after_hooks = [];
 
+	/** @type {NavigationHookArgs} */
+	#hook_args;
+
 	/** @param {RutaOptions} options */
 	constructor(options) {
 		this.#base = normalise_base(options.base || '');
 		this.#context = options.context || {};
 		this.#routes = /** @type {any} */ (options.routes);
+
+		this.#hook_args = {
+			to: this.#to,
+			from: this.#from,
+			context: this.#context,
+			controller: this.#controller,
+		};
 
 		if (BROWSER) {
 			// @ts-expect-error experimental API
@@ -140,7 +168,10 @@ class Ruta {
 	async #match_route(url) {
 		let { href, searchParams } = new URL(url);
 
-		href = href.replace(origin, '').replace(this.#base, '');
+		href = href
+			.replace(origin, '')
+			.replace(this.#base, '')
+			.replace(MULTI_SLASH_RE, '/');
 
 		// exit if navigating to the same URL
 		if (this.#from.href === href) {
@@ -160,7 +191,6 @@ class Ruta {
 
 				const match = pattern.exec(url);
 
-				// we now have a route match
 				if (match) {
 					const {
 						pathname: { groups },
@@ -168,51 +198,45 @@ class Ruta {
 
 					this.#to.href = href;
 					this.#to.path = path;
-					this.#to.params = route.parse_params?.(groups) || {};
-					this.#to.search = route.parse_search?.(searchParams) || {};
-					this.#to.pages = [];
+					this.#to.params = route.parse_params?.(groups) || groups;
+					this.#to.search =
+						route.parse_search?.(searchParams) || IMMUTABLE_EMPTY_OBJ;
+					this.#to.pages = IMMUTABLE_EMPTY_ARRAY;
 
 					// call before navigate hooks if available
 					if (this.#before_hooks.length) {
 						await Promise.all(
-							this.#before_hooks.map((h) =>
-								h({
-									to: this.#to,
-									from: this.#from,
-									context: this.#context,
-									controller: this.#controller,
-								}),
-							),
+							this.#before_hooks.map((h) => h(this.#hook_args)),
 						);
 					}
 
+					/** @type {Promise<{ default: RegisteredComponent }>[]} */
+					let promises = [];
 					if (!route[RESOLVED_SYMBOL]) {
-						route[PAGES_SYMBOL] = (
-							await Promise.all(
-								route[PAGES_SYMBOL].map((v) => {
-									if (typeof v === 'function') {
-										return v();
-									}
-									return v;
-								}),
-							)
-						).map((v) => v.default);
+						promises = route[PAGES_SYMBOL].map((v) => {
+							if (typeof v === 'function') {
+								return v();
+							}
+							return v;
+						});
+					}
+
+					// fetch components and run load fn parallel
+					const [pages] = await Promise.all([
+						Promise.all(promises),
+						route.load?.(this.#hook_args),
+					]);
+
+					if (!route[RESOLVED_SYMBOL]) {
+						route[PAGES_SYMBOL] = pages.map((v) => v.default);
 						route[RESOLVED_SYMBOL] = true;
 					}
+
 					this.#to.pages = route[PAGES_SYMBOL];
 
 					// call after navigate hooks if available
 					if (this.#after_hooks.length) {
-						await Promise.all(
-							this.#after_hooks.map((h) =>
-								h({
-									to: this.#to,
-									from: this.#from,
-									context: this.#context,
-									controller: this.#controller,
-								}),
-							),
-						);
+						await Promise.all(this.#after_hooks.map((h) => h(this.#hook_args)));
 					}
 
 					// store old route
@@ -294,4 +318,6 @@ function warn(msg) {
  * @typedef {import('./index').RutaOptions} RutaOptions
  * @typedef {import('./index').InternalRoute} InternalRoute
  * @typedef {import('./index').NavigationHook} NavigationHook
+ * @typedef {import('./index').NavigationHookArgs} NavigationHookArgs
+ * @typedef {import('./index').RegisteredComponent} RegisteredComponent
  */

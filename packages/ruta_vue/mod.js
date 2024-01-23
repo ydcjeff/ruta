@@ -25,7 +25,10 @@ class RutaVue extends Ruta {
 		super(opts);
 
 		this.after(({ to }) => {
-			this.#route = to;
+			for (const key in to) {
+				// @ts-expect-error
+				this.#route[key] = key === 'pages' ? markRaw(to[key]) : to[key];
+			}
 		});
 	}
 

@@ -31,5 +31,7 @@ const router = use_router();
 		>456</a
 	>
 
+	<a :href="router.to_href('/load_hook')">load hook</a>
+
 	<slot />
 </template>

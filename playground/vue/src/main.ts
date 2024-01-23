@@ -22,11 +22,23 @@ const routes = create_routes()
 				return { param_id: +params.param_id };
 			},
 		}),
+		define_route({
+			path: 'load_hook',
+			page: () => import('./routes/load_hook.vue'),
+			async load(args) {
+				const { context } = args;
+				context.load_hook = 'loaded';
+			},
+		}),
 	])
 	.done();
 
 const app = createApp(RouteMatches);
-const ruta = new RutaVue({ base: 'vue', routes, context: { qc: 1 } });
+const ruta = new RutaVue({
+	base: 'vue',
+	context: { qc: 1, load_hook: 'load' },
+	routes,
+});
 
 app.use(ruta);
 

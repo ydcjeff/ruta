@@ -83,16 +83,16 @@ type RouteOptions<
 		? TParams
 		: 'parse_params must return an object';
 	parse_search?(search: URLSearchParams): TSearch;
-	before?: NavigationHook;
-	after?: NavigationHook;
+	load?: NavigationHook;
 };
 
-export type NavigationHookArgs<
-	TRoutes = RegisteredRouter['ROUTES'],
-	T = TRoutes[keyof TRoutes] extends never ? Route : TRoutes[keyof TRoutes],
-> = {
-	to: T;
-	from: T;
+export type NavigationHookArgs = {
+	to: RegisteredRoutes[keyof RegisteredRoutes] extends never
+		? Route
+		: RegisteredRoutes[keyof RegisteredRoutes];
+	from: RegisteredRoutes[keyof RegisteredRoutes] extends never
+		? Route
+		: RegisteredRoutes[keyof RegisteredRoutes];
 	context: RegisteredRouter['context'];
 	controller: AbortController;
 };
@@ -118,6 +118,8 @@ type RegisteredComponent = Register extends { component: infer C }
 	: unknown;
 
 export type RegisteredRouter = Register extends { router: infer R } ? R : Ruta;
+
+export type RegisteredRoutes = RegisteredRouter['ROUTES'];
 
 type MyReturnType<T extends (...args: any) => any> = T extends (
 	...args: any
