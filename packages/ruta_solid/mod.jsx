@@ -11,25 +11,31 @@ const DepthContext = createContext(1);
 const RouterContext = createContext();
 
 class RutaSolid extends Ruta {
-	constructor(options = {}) {
+	/** @param {import('./index').RutaOptions} options */
+	constructor(options) {
 		super(options);
 
-		const [route, set_route] = createStore({
-			path: '/',
-			params: {},
-			search: {},
-			pages: [],
-		});
+		const [route, set_route] = createStore(
+			/** @type {import('./index').Route} */ ({
+				href: '/',
+				path: '/',
+				params: {},
+				search: {},
+				pages: [],
+			}),
+		);
 
 		this.route = route;
-		this.after((to) => set_route(to));
+		this.after(({ to }) => set_route(to));
 	}
 }
 
+/** @type {import('./index').use_router} */
 function use_router() {
 	return useContext(RouterContext);
 }
 
+/** @type {import('./index').use_route} */
 function use_route() {
 	return useContext(RouterContext).route;
 }

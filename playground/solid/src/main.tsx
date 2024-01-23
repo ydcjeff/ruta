@@ -7,11 +7,12 @@ import {
 	RutaSolid,
 	RouterContext,
 	define_route,
+	create_routes,
 } from 'ruta-solid';
 import { lazy } from 'solid-js';
 import { render } from 'solid-js/web';
 
-const ruta = new RutaSolid()
+const routes = create_routes()
 	.add('', [
 		define_route({
 			path: '/',
@@ -20,7 +21,7 @@ const ruta = new RutaSolid()
 	])
 	.add('/', [
 		define_route({
-			path: '',
+			path: 'home',
 			page: lazy(() => import('./routes/home_page.jsx')),
 		}),
 		define_route({
@@ -30,7 +31,10 @@ const ruta = new RutaSolid()
 				return { param_id: +params.param_id };
 			},
 		}),
-	]);
+	])
+	.done();
+
+const ruta = new RutaSolid({ base: 'solid', context: { di: 123 }, routes });
 
 ruta.go().then(() => {
 	render(

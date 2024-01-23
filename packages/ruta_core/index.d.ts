@@ -99,11 +99,10 @@ export type NavigationHook = (args: NavigationHookArgs) => MaybePromise<void>;
 
 export interface RutaOptions<
 	TRoutes extends Record<string, Route> = Record<string, Route>,
-	TBase extends string = string,
 	TContext extends AnyObj = AnyObj,
 > {
 	routes: TRoutes;
-	base?: TBase;
+	base?: string;
 	context?: TContext;
 }
 
@@ -125,9 +124,8 @@ type MyReturnType<T extends (...args: any) => any> = T extends (
 	: {};
 
 export class Ruta<
-	const TBase extends string = '',
-	TContext extends AnyObj = AnyObj,
 	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > {
 	/**
@@ -135,7 +133,7 @@ export class Ruta<
 	 */
 	ROUTES: Prettify<TRoutes>;
 
-	constructor(options?: RutaOptions<TRoutes, TBase, TContext>);
+	constructor(options: RutaOptions<TRoutes, TContext>);
 
 	/**
 	 * Get router context. Useful for injecting dependencies.
@@ -179,7 +177,7 @@ export function create_routes(): RouteTree;
 
 type RouteTree<
 	TPaths extends string = string,
-	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TRoutes extends Record<string, Route> = {},
 > = {
 	// add<const TChildren extends RouteOptions[]>(
 	// 	parent: true,
