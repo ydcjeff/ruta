@@ -1,9 +1,10 @@
 <script>
-	import { RouteMatches, install_router } from 'ruta-svelte';
+	import { RouteMatches } from 'ruta-svelte';
 
+	/** @type {import('ruta-svelte').RutaSvelte } */
 	export let ruta;
 
-	install_router(ruta);
+	ruta.install();
 </script>
 
 <RouteMatches />

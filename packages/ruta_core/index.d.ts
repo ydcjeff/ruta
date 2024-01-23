@@ -73,8 +73,10 @@ type RouteOptions<
 	_ParsedParams = ParseParams<TPath>,
 > = {
 	path: TPath;
-	page: RegisteredComponent | (() => Promise<RegisteredComponent>);
-	error?: RegisteredComponent | (() => Promise<RegisteredComponent>);
+	page: RegisteredComponent | (() => Promise<{ default: RegisteredComponent }>);
+	error?:
+		| RegisteredComponent
+		| (() => Promise<{ default: RegisteredComponent }>);
 	parse_params?(
 		params: _ParsedParams,
 	): TParams extends Record<keyof _ParsedParams, any>

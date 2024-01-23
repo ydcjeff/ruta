@@ -1,13 +1,22 @@
 <script>
-	const links = ['/', '/params/123', '/params/456'];
+	import { get_router } from 'ruta-svelte';
+
+	const router = get_router();
 </script>
 
 <h1>
 	root layout {Date.now()}
 </h1>
 
-{#each links as l}
-	<a href={l}>{l}</a>
-{/each}
+<a href={router.to_href('/')}>index</a>
+<a href={router.to_href('/home')}>home</a>
+<a
+	href={router.to_href({
+		path: '/params/:param_id',
+		params: {
+			param_id: 123,
+		},
+	})}>params/123</a
+>
 
 <slot />

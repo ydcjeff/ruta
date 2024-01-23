@@ -4,9 +4,9 @@
 import '../../style.css';
 
 import App from './app.svelte';
-import { Ruta, define_route } from 'ruta-svelte';
+import { RutaSvelte, define_route, create_routes } from 'ruta-svelte';
 
-const ruta = new Ruta()
+const routes = create_routes()
 	.add('', [
 		define_route({
 			path: '/',
@@ -15,7 +15,7 @@ const ruta = new Ruta()
 	])
 	.add('/', [
 		define_route({
-			path: '',
+			path: 'home',
 			page: () => import('./routes/home_page.svelte'),
 		}),
 		define_route({
@@ -25,7 +25,10 @@ const ruta = new Ruta()
 				return { param_id: +params.param_id };
 			},
 		}),
-	]);
+	])
+	.done();
+
+const ruta = new RutaSvelte({ base: 'svelte', routes, context: { di: 123 } });
 
 ruta.go().then(() => {
 	new App({

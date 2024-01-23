@@ -9,24 +9,23 @@ import {
 	define_route,
 	create_routes,
 } from 'ruta-solid';
-import { lazy } from 'solid-js';
 import { render } from 'solid-js/web';
 
 const routes = create_routes()
 	.add('', [
 		define_route({
 			path: '/',
-			page: lazy(() => import('./routes/root_layout.jsx')),
+			page: () => import('./routes/root_layout.jsx'),
 		}),
 	])
 	.add('/', [
 		define_route({
 			path: 'home',
-			page: lazy(() => import('./routes/home_page.jsx')),
+			page: () => import('./routes/home_page.jsx'),
 		}),
 		define_route({
 			path: 'params/:param_id',
-			page: lazy(() => import('./routes/param_id_page.jsx')),
+			page: () => import('./routes/param_id_page.jsx'),
 			parse_params(params) {
 				return { param_id: +params.param_id };
 			},
