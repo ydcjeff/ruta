@@ -4,6 +4,12 @@
 	"type": "module",
 	"author": "Jeff Yang",
 	"license": "MIT",
+	"files": [
+		"*.js",
+		"*.d.ts",
+		"*.jsx",
+		"!*.test.js"
+	],
 	"keywords": [
 		"router",
 		"ruta",
