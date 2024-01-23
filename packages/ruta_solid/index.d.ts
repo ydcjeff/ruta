@@ -1,5 +1,11 @@
 import type { Component, Context, JSX } from 'solid-js';
-import type { Ruta, RegisteredRouter, AnyObj, Route } from 'ruta-core';
+import type {
+	Ruta,
+	RegisteredRouter,
+	AnyObj,
+	Route,
+	RegisteredRoutes,
+} from 'ruta-core';
 
 export * from 'ruta-core';
 
@@ -14,8 +20,8 @@ export class RutaSolid<
 export function use_router(): RegisteredRouter;
 
 export function use_route<
-	T extends keyof RegisteredRouter['ROUTES'] = keyof RegisteredRouter['ROUTES'],
->(route?: T): RegisteredRouter['ROUTES'][T];
+	T extends keyof RegisteredRoutes = keyof RegisteredRoutes,
+>(route?: T): RegisteredRoutes[T];
 
 export function RouteMatches(): JSX.Element;
 

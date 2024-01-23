@@ -1,5 +1,11 @@
 import type { SvelteComponent } from 'svelte';
-import type { Ruta, RegisteredRouter, Route, AnyObj } from 'ruta-core';
+import type {
+	Ruta,
+	RegisteredRouter,
+	Route,
+	AnyObj,
+	RegisteredRoutes,
+} from 'ruta-core';
 import type { Readable } from 'svelte/store';
 
 export * from 'ruta-core';
@@ -7,8 +13,8 @@ export * from 'ruta-core';
 export function get_router(): RegisteredRouter;
 
 export function get_route<
-	T extends keyof RegisteredRouter['ROUTES'] = keyof RegisteredRouter['ROUTES'],
->(route?: T): Readable<RegisteredRouter['ROUTES'][T]>;
+	T extends keyof RegisteredRoutes = keyof RegisteredRoutes,
+>(route?: T): Readable<RegisteredRoutes[T]>;
 
 export class RutaSvelte<
 	TRoutes extends Record<string, Route> = Record<string, Route>,
