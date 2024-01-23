@@ -1,8 +1,9 @@
+import { URLPattern } from 'urlpattern-polyfill';
+import { PAGES_SYMBOL, PATTERN_SYMBOL, RESOLVED_SYMBOL } from './constants';
+
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
 type AnyObj = Record<string, any>;
 type MaybePromise<T> = Promise<T> | T;
-
-type HookStopHandler = () => void;
 
 type CleanPath<T extends string> = T extends `${infer L}//${infer R}`
 	? CleanPath<`${CleanPath<L>}/${CleanPath<R>}`>
@@ -35,9 +36,7 @@ type ParseParams<T extends string> = {
 
 type ToOptions<
 	TPath extends string = string,
-	// @ts-expect-error
 	_AllParams = RegisteredRouter['ROUTES'][TPath]['params'],
-	// @ts-expect-error
 	_AllSearch = RegisteredRouter['ROUTES'][TPath]['search'],
 > = {
 	path: TPath;
@@ -48,7 +47,7 @@ type ToOptions<
 		? { search?: never }
 		: { search: _AllSearch });
 
-type Route<
+export type Route<
 	TRouteOptions extends RouteOptions = RouteOptions,
 	THref extends string = string,
 	TAllParams extends AnyObj = {},
@@ -60,6 +59,13 @@ type Route<
 	pages: RegisteredComponent[];
 };
 
+type InternalRoute = Route &
+	RouteOptions & {
+		[PAGES_SYMBOL]: RegisteredComponent[];
+		[PATTERN_SYMBOL]: URLPattern;
+		[RESOLVED_SYMBOL]: boolean;
+	};
+
 type RouteOptions<
 	TPath extends string = string,
 	TParams extends AnyObj = {},
@@ -69,30 +75,34 @@ type RouteOptions<
 	path: TPath;
 	page: RegisteredComponent | (() => Promise<RegisteredComponent>);
 	error?: RegisteredComponent | (() => Promise<RegisteredComponent>);
+	parse_params?(
+		params: _ParsedParams,
+	): TParams extends Record<keyof _ParsedParams, any>
+		? TParams
+		: 'parse_params must return an object';
 	parse_search?(search: URLSearchParams): TSearch;
-	before?(): MaybePromise<void>;
-	after?(): MaybePromise<void>;
-} & (keyof _ParsedParams extends never
-	? {
-			// parse_params?: never;
-		}
-	: {
-			parse_params(
-				params: _ParsedParams,
-			): TParams extends Record<keyof _ParsedParams, any>
-				? TParams
-				: 'parse_params must return an object';
-		});
+	before?: NavigationHook;
+	after?: NavigationHook;
+};
 
-export type NavigationHook = (
-	to: RegisteredRouter['ROUTES'][keyof RegisteredRouter['ROUTES']],
-	from: RegisteredRouter['ROUTES'][keyof RegisteredRouter['ROUTES']],
-) => MaybePromise<void>;
+export type NavigationHookArgs<
+	TRoutes = RegisteredRouter['ROUTES'],
+	T = TRoutes[keyof TRoutes] extends never ? Route : TRoutes[keyof TRoutes],
+> = {
+	to: T;
+	from: T;
+	context: RegisteredRouter['context'];
+	controller: AbortController;
+};
+
+export type NavigationHook = (args: NavigationHookArgs) => MaybePromise<void>;
 
 export interface RutaOptions<
+	TRoutes extends Record<string, Route> = Record<string, Route>,
 	TBase extends string = string,
 	TContext extends AnyObj = AnyObj,
 > {
+	routes: TRoutes;
 	base?: TBase;
 	context?: TContext;
 }
@@ -106,7 +116,7 @@ type RegisteredComponent = Register extends { component: infer C }
 	? C
 	: unknown;
 
-type RegisteredRouter = Register extends { router: infer R } ? R : Ruta;
+export type RegisteredRouter = Register extends { router: infer R } ? R : Ruta;
 
 type MyReturnType<T extends (...args: any) => any> = T extends (
 	...args: any
@@ -115,48 +125,22 @@ type MyReturnType<T extends (...args: any) => any> = T extends (
 	: {};
 
 export class Ruta<
-	TBase extends string = '',
+	const TBase extends string = '',
 	TContext extends AnyObj = AnyObj,
-	TPaths extends string = '',
-	TRoutes extends Record<TPaths, Route> = Record<TPaths, Route>,
+	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TPaths extends string = keyof TRoutes & string,
 > {
 	/**
-	 * Typed only, no runtime equivalent.
+	 * Type only, no runtime equivalent.
 	 */
-	ROUTES: Omit<TRoutes, ''>;
+	ROUTES: Prettify<TRoutes>;
 
-	constructor(options?: RutaOptions<TBase, TContext>);
+	constructor(options?: RutaOptions<TRoutes, TBase, TContext>);
 
 	/**
 	 * Get router context. Useful for injecting dependencies.
 	 */
 	get context(): TContext;
-
-	/**
-	 * Add new children routes by the parent path.
-	 */
-	add<
-		TParentPath extends TPaths,
-		const TChildren extends RouteOptions[],
-		_ParentRoute extends Route = TRoutes[TParentPath],
-	>(
-		parent_path: TParentPath,
-		children: TChildren,
-	): Ruta<
-		TBase,
-		TContext,
-		TPaths | JoinPaths<TParentPath, TChildren[number]['path']>,
-		// @ts-expect-error idk
-		TRoutes & {
-			[C in TChildren[number] as JoinPaths<TParentPath, C['path']>]: Route<
-				C,
-				JoinPaths<TParentPath, C['path']>,
-				// @ts-expect-error conditional type
-				_ParentRoute['params'] & MyReturnType<C['parse_params']>,
-				_ParentRoute['search'] & MyReturnType<NonNullable<C['parse_search']>>
-			>;
-		}
-	>;
 
 	/**
 	 * Navigate to a route. This is the starting point of a full navigation.
@@ -175,12 +159,12 @@ export class Ruta<
 	/**
 	 * Register a router before hook.
 	 */
-	before(hook: NavigationHook): HookStopHandler;
+	before(hook: NavigationHook): () => void;
 
 	/**
 	 * Register a router after hook.
 	 */
-	after(hook: NavigationHook): HookStopHandler;
+	after(hook: NavigationHook): () => void;
 }
 
 export function define_route<
@@ -190,3 +174,44 @@ export function define_route<
 >(
 	route: RouteOptions<TPath, TParams, TSearch>,
 ): RouteOptions<TPath, TParams, TSearch>;
+
+export function create_routes(): RouteTree;
+
+type RouteTree<
+	TPaths extends string = string,
+	TRoutes extends Record<string, Route> = Record<string, Route>,
+> = {
+	// add<const TChildren extends RouteOptions[]>(
+	// 	parent: true,
+	// 	children: TChildren,
+	// ): RouteTree<
+	// 	TChildren[number]['path'],
+	// 	{
+	// 		[C in TChildren[number] as C['path']]: Route<
+	// 			C,
+	// 			C['path'],
+	// 			MyReturnType<NonNullable<C['parse_params']>>,
+	// 			MyReturnType<NonNullable<C['parse_search']>>
+	// 		>;
+	// 	}
+	// >;
+	add<
+		const TParentPath extends TPaths,
+		const TChildren extends RouteOptions[],
+		_ParentRoute extends Route = TRoutes[TParentPath],
+	>(
+		parent: TParentPath,
+		children: TChildren,
+	): RouteTree<
+		TPaths | JoinPaths<TParentPath, TChildren[number]['path']>,
+		TRoutes & {
+			[C in TChildren[number] as JoinPaths<TParentPath, C['path']>]: Route<
+				C,
+				JoinPaths<TParentPath, C['path']>,
+				_ParentRoute['params'] & MyReturnType<NonNullable<C['parse_params']>>,
+				_ParentRoute['search'] & MyReturnType<NonNullable<C['parse_search']>>
+			>;
+		}
+	>;
+	done(): TRoutes;
+};

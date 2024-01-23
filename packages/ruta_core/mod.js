@@ -1,12 +1,9 @@
 import 'urlpattern-polyfill';
 
 import { BROWSER, DEV } from 'esm-env';
+import { PAGES_SYMBOL, RESOLVED_SYMBOL, PATTERN_SYMBOL } from './constants.js';
 
-export { Ruta, define_route };
-
-const PATTERN_SYMBOL = Symbol(DEV ? 'pattern' : '');
-const PAGES_SYMBOL = Symbol(DEV ? 'pages' : '');
-const RESOLVED_SYMBOL = Symbol(DEV ? 'resolved' : '');
+export { Ruta, define_route, create_routes };
 
 class Ruta {
 	/** router is ready for subsequent navigations. */
@@ -14,12 +11,15 @@ class Ruta {
 	#base;
 	#context;
 
-	/** @type {Record<string, import('./index').RouteOptions>} */
+	/** @type {AbortController} */
+	#controller = new AbortController();
+
+	/** @type {Record<string, InternalRoute>} */
 	#routes = {};
 
-	/** @type {import('./index').Route} */
+	/** @type {Route} */
 	#from = { href: '', pages: [], params: {}, path: '', search: {} };
-	/** @type {import('./index').Route} */
+	/** @type {Route} */
 	#to = { href: '/', pages: [], params: {}, path: '/', search: {} };
 
 	// hooks
@@ -29,12 +29,11 @@ class Ruta {
 	/** @type {NavigationHook[]} */
 	#after_hooks = [];
 
-	/**
-	 * @param {import('./index').RutaOptions} options
-	 */
-	constructor(options = {}) {
+	/** @param {RutaOptions} options */
+	constructor(options) {
 		this.#base = normalise_base(options.base || '');
 		this.#context = options.context || {};
+		this.#routes = /** @type {any} */ (options.routes);
 
 		if (BROWSER) {
 			// @ts-expect-error experimental API
@@ -54,33 +53,7 @@ class Ruta {
 		}
 	}
 
-	/** @type {import('./index').Ruta['add']} */
-	add(parent_path, children) {
-		for (const child of children) {
-			const parent = this.#routes[parent_path];
-			const child_path = join_paths('', parent_path, child.path);
-
-			// layout route matched
-			if (parent_path === child_path && parent) {
-				// @ts-expect-error private property
-				parent[PAGES_SYMBOL].unshift(child.page);
-			} else {
-				// @ts-expect-error private property
-				if (!child[PAGES_SYMBOL]) {
-					// @ts-expect-error private property
-					child[PAGES_SYMBOL] = [child.page];
-				}
-				if (parent) {
-					// @ts-expect-error private property
-					child[PAGES_SYMBOL].push(parent.page);
-				}
-				this.#routes[join_paths('', parent_path, child.path)] = child;
-			}
-		}
-		return /** @type {any} */ (this);
-	}
-
-	/** @type {import('./index').Ruta['go']} */
+	/** @type {TRuta['go']} */
 	async go(to = /** @type {any} */ (BROWSER ? location.href : '/')) {
 		const url = this.to_href(to);
 		if (BROWSER) {
@@ -95,20 +68,24 @@ class Ruta {
 		}
 	}
 
-	/** @type {import('./index').Ruta['to_href']} */
+	/** @type {TRuta['to_href']} */
 	to_href(to) {
 		if (typeof to === 'string') {
-			/** @type {string} */ (to) = to
-				.replace(location.origin, '')
-				.replace(this.#base, '');
-			return join_paths('', this.#base, /** @type {string} */ (to));
+			return join_paths(
+				'',
+				this.#base,
+				to.replace(location.origin, '').replace(this.#base, ''),
+			);
 		}
 
-		let { path, params = {}, search = {} } = to;
+		let {
+			path,
+			params = /** @type {Record<string, any>} */ ({}),
+			search = {},
+		} = to;
 		if (Object.keys(params).length) {
 			for (const key in params) {
-				// @ts-expect-error it is assignable
-				path = path.replace(`:${key}`, params[key]);
+				/** @type {string} */ (path) = path.replace(`:${key}`, params[key]);
 			}
 		}
 		const has_search = Object.keys(search).length;
@@ -119,19 +96,19 @@ class Ruta {
 		);
 	}
 
-	/** @type {import('./index').Ruta['context']} */
+	/** @type {TRuta['context']} */
 	get context() {
 		return this.#context;
 	}
 
 	// navigation hooks
 
-	/** @type {import('./index').Ruta['before']} */
+	/** @type {TRuta['before']} */
 	before(hook) {
 		return this.#add_hook(this.#before_hooks, hook);
 	}
 
-	/** @type {import('./index').Ruta['after']} */
+	/** @type {TRuta['after']} */
 	after(hook) {
 		return this.#add_hook(this.#after_hooks, hook);
 	}
@@ -158,7 +135,7 @@ class Ruta {
 	/**
 	 * Do route matching. This also calls the respective navigation hooks.
 	 *
-	 * @param {string | URL} url
+	 * @param {string} url
 	 */
 	async #match_route(url) {
 		let { href, searchParams } = new URL(url);
@@ -174,68 +151,74 @@ class Ruta {
 		for (const path in routes) {
 			const route = routes[path];
 
-			const pattern =
-				// @ts-expect-error private property
-				route[PATTERN_SYMBOL] ||
-				// @ts-expect-error private property
-				(route[PATTERN_SYMBOL] = new URLPattern({
-					pathname: join_paths('', this.#base, path),
-				}));
+			if (route) {
+				const pattern =
+					route[PATTERN_SYMBOL] ||
+					(route[PATTERN_SYMBOL] = new URLPattern({
+						pathname: join_paths('', this.#base, path),
+					}));
 
-			const match = pattern.exec(url);
+				const match = pattern.exec(url);
 
-			// we now have a route match
-			if (match && route) {
-				const {
-					pathname: { groups },
-				} = match;
+				// we now have a route match
+				if (match) {
+					const {
+						pathname: { groups },
+					} = match;
 
-				this.#to.href = href;
-				this.#to.path = path;
-				// @ts-expect-error conditional types
-				this.#to.params = route.parse_params?.(groups) || {};
-				this.#to.search = route.parse_search?.(searchParams) || {};
-				this.#to.pages = [];
+					this.#to.href = href;
+					this.#to.path = path;
+					this.#to.params = route.parse_params?.(groups) || {};
+					this.#to.search = route.parse_search?.(searchParams) || {};
+					this.#to.pages = [];
 
-				// call before navigate hooks if available
-				if (this.#before_hooks.length) {
-					await Promise.all(
-						this.#before_hooks.map((h) => h(this.#to, this.#from)),
-					);
-				}
-
-				// @ts-expect-error private property
-				if (!route[RESOLVED_SYMBOL]) {
-					// @ts-expect-error private property
-					route[PAGES_SYMBOL] = (
+					// call before navigate hooks if available
+					if (this.#before_hooks.length) {
 						await Promise.all(
-							// @ts-expect-error private property
-							route[PAGES_SYMBOL].map((v) => {
-								if (typeof v === 'function') {
-									return v();
-								}
-								return v;
-							}),
-						)
-					)
-						// @ts-expect-error idk why
-						.map((v) => v.default);
-					// @ts-expect-error private property
-					route[RESOLVED_SYMBOL] = true;
-				}
-				// @ts-expect-error private property
-				this.#to.pages = route[PAGES_SYMBOL];
+							this.#before_hooks.map((h) =>
+								h({
+									to: this.#to,
+									from: this.#from,
+									context: this.#context,
+									controller: this.#controller,
+								}),
+							),
+						);
+					}
 
-				// call after navigate hooks if available
-				if (this.#after_hooks.length) {
-					await Promise.all(
-						this.#after_hooks.map((h) => h(this.#to, this.#from)),
-					);
-				}
+					if (!route[RESOLVED_SYMBOL]) {
+						route[PAGES_SYMBOL] = (
+							await Promise.all(
+								route[PAGES_SYMBOL].map((v) => {
+									if (typeof v === 'function') {
+										return v();
+									}
+									return v;
+								}),
+							)
+						).map((v) => v.default);
+						route[RESOLVED_SYMBOL] = true;
+					}
+					this.#to.pages = route[PAGES_SYMBOL];
 
-				// store old route
-				this.#from = this.#to;
-				return;
+					// call after navigate hooks if available
+					if (this.#after_hooks.length) {
+						await Promise.all(
+							this.#after_hooks.map((h) =>
+								h({
+									to: this.#to,
+									from: this.#from,
+									context: this.#context,
+									controller: this.#controller,
+								}),
+							),
+						);
+					}
+
+					// store old route
+					this.#from = this.#to;
+					return;
+				}
 			}
 		}
 		DEV && warn(`Unmatched ${href}`);
@@ -245,6 +228,36 @@ class Ruta {
 /** @type {import('./index').define_route} */
 function define_route(route) {
 	return route;
+}
+
+/** @type {import('./index').create_routes} */
+function create_routes() {
+	/** @type {Record<string, InternalRoute>} */
+	const routes = {};
+	return {
+		add(parent_path, children) {
+			for (const child of /** @type {InternalRoute[]} */ (
+				/** @type {unknown} */ (children)
+			)) {
+				const parent = routes[parent_path];
+				const child_path = join_paths('', parent_path, child.path);
+
+				if (parent_path === child_path && parent) {
+					parent[PAGES_SYMBOL].unshift(child.page);
+				} else {
+					if (!child[PAGES_SYMBOL]) {
+						child[PAGES_SYMBOL] = [child.page];
+					}
+					if (parent) {
+						child[PAGES_SYMBOL].push(parent.page);
+					}
+					routes[child_path] = child;
+				}
+			}
+			return /** @type {any} */ (this);
+		},
+		done: () => /** @type {any} */ (routes),
+	};
 }
 
 const MULTI_SLASH_RE = /\/{2,}/g;
@@ -276,5 +289,9 @@ function warn(msg) {
 }
 
 /**
+ * @typedef {import('./index').Ruta} TRuta
+ * @typedef {import('./index').Route} Route
+ * @typedef {import('./index').RutaOptions} RutaOptions
+ * @typedef {import('./index').InternalRoute} InternalRoute
  * @typedef {import('./index').NavigationHook} NavigationHook
  */

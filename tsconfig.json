@@ -4,6 +4,7 @@
 		// https://www.totaltypescript.com/tsconfig-cheat-sheet
 		/* Base Options: */
 		"esModuleInterop": true,
+		"skipLibCheck": false,
 		"target": "ESNext",
 		"allowJs": true,
 		"resolveJsonModule": true,
