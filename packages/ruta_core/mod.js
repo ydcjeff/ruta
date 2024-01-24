@@ -249,12 +249,12 @@ class Ruta {
 	}
 }
 
-/** @type {import('./index').define_route} */
+/** @type {import('./types').define_route} */
 function define_route(route) {
 	return route;
 }
 
-/** @type {import('./index').create_routes} */
+/** @type {import('./types').create_routes} */
 function create_routes() {
 	/** @type {Record<string, InternalRoute>} */
 	const routes = {};
@@ -313,11 +313,11 @@ function warn(msg) {
 }
 
 /**
- * @typedef {import('./index').Ruta} TRuta
- * @typedef {import('./index').Route} Route
- * @typedef {import('./index').RutaOptions} RutaOptions
- * @typedef {import('./index').InternalRoute} InternalRoute
- * @typedef {import('./index').NavigationHook} NavigationHook
- * @typedef {import('./index').NavigationHookArgs} NavigationHookArgs
- * @typedef {import('./index').RegisteredComponent} RegisteredComponent
+ * @typedef {import('./types').Ruta} TRuta
+ * @typedef {import('./types').Route} Route
+ * @typedef {import('./types').RutaOptions} RutaOptions
+ * @typedef {import('./types').InternalRoute} InternalRoute
+ * @typedef {import('./types').NavigationHook} NavigationHook
+ * @typedef {import('./types').NavigationHookArgs} NavigationHookArgs
+ * @typedef {import('./types').RegisteredComponent} RegisteredComponent
  */
