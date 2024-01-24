@@ -48,14 +48,19 @@ type ToOptions<
 		: { search: _AllSearch });
 
 type Route<
-	TRouteOptions extends RouteOptions = RouteOptions,
-	THref extends string = string,
+	TAllPath extends string = string,
 	TAllParams extends AnyObj = {},
 	TAllSearch extends AnyObj = {},
-> = Pick<TRouteOptions, 'path'> & {
-	href: THref;
+> = {
+	/** Resolved href string in the shape of `/base/pathname?search#hash`. */
+	href: string;
+	/** Resolved full path. */
+	path: TAllPath;
+	/** Resolved all parameters. */
 	params: TAllParams;
+	/** Resolved all search. */
 	search: TAllSearch;
+	/** Resolved matched pages. */
 	pages: RegisteredComponent[];
 };
 
@@ -208,7 +213,6 @@ type RouteTree<
 		TPaths | JoinPaths<TParentPath, TChildren[number]['path']>,
 		TRoutes & {
 			[C in TChildren[number] as JoinPaths<TParentPath, C['path']>]: Route<
-				C,
 				JoinPaths<TParentPath, C['path']>,
 				_ParentRoute['params'] & MyReturnType<NonNullable<C['parse_params']>>,
 				_ParentRoute['search'] & MyReturnType<NonNullable<C['parse_search']>>
