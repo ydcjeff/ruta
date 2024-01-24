@@ -11,8 +11,10 @@ const routes = create_routes()
 			path: '/',
 			page: () => import('./routes/root_layout.vue'),
 		}),
+	])
+	.add('/', [
 		define_route({
-			path: 'home',
+			path: '',
 			page: () => import('./routes/home_page.vue'),
 		}),
 		define_route({

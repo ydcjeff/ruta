@@ -8,12 +8,12 @@ import { use_route } from './mod.js';
 import RouteMatches from './route_matches.vue';
 
 const route = use_route();
-const depth = inject(DEPTH_SYMBOL, 1);
+const index = inject(DEPTH_SYMBOL, 0);
 
-const component = computed(() => route.pages[route.pages.length - depth]);
-const has_children = computed(() => route.pages.length > depth);
+const component = computed(() => route.pages[index]);
+const has_children = computed(() => route.pages.length > index);
 
-provide(DEPTH_SYMBOL, depth + 1);
+provide(DEPTH_SYMBOL, index + 1);
 </script>
 
 <template>

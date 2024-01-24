@@ -2,6 +2,7 @@
 // so reexport the necessary ones for public API
 export {
 	AnyObj,
+	InternalRoute,
 	NavigationHook,
 	NavigationHookArgs,
 	Register,

@@ -20,7 +20,7 @@ const routes = create_routes()
 	])
 	.add('/', [
 		define_route({
-			path: 'home',
+			path: '',
 			page: () => import('./routes/home_page.jsx'),
 		}),
 		define_route({

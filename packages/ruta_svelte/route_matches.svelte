@@ -7,12 +7,12 @@
 	import { get_route } from './mod.js';
 
 	const route = get_route();
-	const depth = getContext(DEPTH_SYMBOL) || 1;
+	const index = getContext(DEPTH_SYMBOL) || 0;
 
-	$: component = $route.pages[$route.pages.length - depth];
-	$: has_children = $route.pages.length > depth;
+	$: component = $route.pages[index];
+	$: has_children = $route.pages.length > index;
 
-	setContext(DEPTH_SYMBOL, depth + 1);
+	setContext(DEPTH_SYMBOL, index + 1);
 </script>
 
 {#if component}

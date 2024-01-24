@@ -1,0 +1,92 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`create_routes 1`] = `
+{
+  "/": {
+    "error": "/",
+    "page": "/",
+    "path": "/",
+    Symbol(page): [
+      "/",
+      "",
+    ],
+    Symbol(error): [
+      "/",
+    ],
+    Symbol(load): [],
+    Symbol(parse_params): [],
+    Symbol(parse_search): [],
+    Symbol(has_layout): true,
+  },
+  "/child-1": {
+    "error": "child-1",
+    "page": "child-1",
+    "path": "child-1",
+    Symbol(page): [
+      "/",
+      "child-1",
+    ],
+    Symbol(error): [
+      "child-1",
+    ],
+    Symbol(load): [],
+    Symbol(parse_params): [],
+    Symbol(parse_search): [],
+  },
+  "/child-1/grand-child-1": {
+    "page": "grand-child-1",
+    "path": "grand-child-1",
+    Symbol(page): [
+      "/",
+      "child-1",
+      "grand-child-1",
+    ],
+    Symbol(error): [
+      "child-1",
+    ],
+    Symbol(load): [],
+    Symbol(parse_params): [],
+    Symbol(parse_search): [],
+  },
+  "/users": {
+    "page": "users",
+    "path": "users",
+    Symbol(page): [
+      "/",
+      "users",
+      "",
+    ],
+    Symbol(error): [],
+    Symbol(load): [],
+    Symbol(parse_params): [],
+    Symbol(parse_search): [],
+    Symbol(has_layout): true,
+  },
+  "/users/": {
+    "page": "/",
+    "path": "/",
+    Symbol(page): [
+      "/",
+      "users",
+      "/",
+    ],
+    Symbol(error): [],
+    Symbol(load): [],
+    Symbol(parse_params): [],
+    Symbol(parse_search): [],
+  },
+  "/users/:user_id": {
+    "page": ":user_id",
+    "path": ":user_id",
+    Symbol(page): [
+      "/",
+      "users",
+      ":user_id",
+    ],
+    Symbol(error): [],
+    Symbol(load): [],
+    Symbol(parse_params): [],
+    Symbol(parse_search): [],
+  },
+}
+`;

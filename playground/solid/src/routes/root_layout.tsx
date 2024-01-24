@@ -9,7 +9,6 @@ export default function root_layout(props: ParentProps) {
 			<h1>root layout {Date.now()}</h1>
 
 			<a href={router.to_href('/')}>index</a>
-			<a href={router.to_href('/home')}>home</a>
 			<a
 				href={router.to_href({
 					path: '/params/:param_id',

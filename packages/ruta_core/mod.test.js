@@ -1,26 +1,53 @@
-import { Ruta } from './mod.js';
-import { assert, describe, test } from 'vitest';
+import { create_routes, define_route } from './mod.js';
+import { expect, test } from 'vitest';
 
-describe('Ruta.to_href', () => {
-	const ruta = new Ruta();
-
-	test('/', () => {
-		assert.deepEqual(ruta.to_href('/'), '/');
-	});
-
-	test('/users', () => {
-		assert.deepEqual(ruta.to_href('users'), '/users');
-	});
-
-	test('to options', () => {
-		assert.deepEqual(
-			ruta.to_href({
-				path: '/test',
-				search: {
-					pass: true,
-				},
+test(create_routes.name, () => {
+	const routes = create_routes()
+		.add('', [
+			define_route({
+				path: '/',
+				page: '/',
+				error: '/',
 			}),
-			'/test?pass=true',
-		);
-	});
+		])
+		.add('/', [
+			define_route({
+				path: '',
+				page: '',
+			}),
+			define_route({
+				path: 'child-1',
+				page: 'child-1',
+				error: 'child-1',
+			}),
+		])
+		.add('/child-1', [
+			define_route({
+				path: 'grand-child-1',
+				page: 'grand-child-1',
+			}),
+		])
+		.add('/', [
+			define_route({
+				path: 'users',
+				page: 'users',
+			}),
+		])
+		.add('/users', [
+			define_route({
+				path: ':user_id',
+				page: ':user_id',
+			}),
+			define_route({
+				path: '',
+				page: '',
+			}),
+			define_route({
+				path: '/',
+				page: '/',
+			}),
+		])
+		.done();
+
+	expect(routes).toMatchSnapshot();
 });

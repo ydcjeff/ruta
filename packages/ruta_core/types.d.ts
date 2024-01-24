@@ -1,5 +1,14 @@
 import { URLPattern } from 'urlpattern-polyfill';
-import { PAGES_SYMBOL, PATTERN_SYMBOL, RESOLVED_SYMBOL } from './constants';
+import {
+	SYMBOL_ERROR,
+	SYMBOL_HAS_LAYOUT,
+	SYMBOL_LOAD,
+	SYMBOL_PAGE,
+	SYMBOL_PARAMS_FN,
+	SYMBOL_PATTERN,
+	SYMBOL_RESOLVED,
+	SYMBOL_SEARCH_FN,
+} from './constants.js';
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
 type AnyObj = Record<string, any>;
@@ -64,11 +73,20 @@ type Route<
 	pages: RegisteredComponent[];
 };
 
-type InternalRoute = Route &
+type InternalRoute<
+	TAllPath extends string = string,
+	TAllParams extends AnyObj = {},
+	TAllSearch extends AnyObj = {},
+> = Route<TAllPath, TAllParams, TAllSearch> &
 	RouteOptions & {
-		[PAGES_SYMBOL]: RegisteredComponent[];
-		[PATTERN_SYMBOL]: URLPattern;
-		[RESOLVED_SYMBOL]: boolean;
+		[SYMBOL_PAGE]: RouteOptions['page'][];
+		[SYMBOL_ERROR]: Required<RouteOptions['error'][]>;
+		[SYMBOL_LOAD]: Required<RouteOptions['load'][]>;
+		[SYMBOL_PARAMS_FN]: Required<RouteOptions['parse_params'][]>;
+		[SYMBOL_SEARCH_FN]: Required<RouteOptions['parse_search'][]>;
+		[SYMBOL_PATTERN]: URLPattern;
+		[SYMBOL_RESOLVED]: boolean;
+		[SYMBOL_HAS_LAYOUT]: boolean;
 	};
 
 type RouteOptions<
@@ -82,13 +100,13 @@ type RouteOptions<
 	error?:
 		| RegisteredComponent
 		| (() => Promise<{ default: RegisteredComponent }>);
-	parse_params?(
+	load?: NavigationHook;
+	parse_params?: (
 		params: _ParsedParams,
-	): TParams extends Record<keyof _ParsedParams, any>
+	) => TParams extends Record<keyof _ParsedParams, any>
 		? TParams
 		: 'parse_params must return an object';
-	parse_search?(search: URLSearchParams): TSearch;
-	load?: NavigationHook;
+	parse_search?: (search: URLSearchParams) => TSearch;
 };
 
 type NavigationHookArgs = {
@@ -105,7 +123,7 @@ type NavigationHookArgs = {
 type NavigationHook = (args: NavigationHookArgs) => MaybePromise<void>;
 
 interface RutaOptions<
-	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
 	TContext extends AnyObj = AnyObj,
 > {
 	routes: TRoutes;
@@ -133,14 +151,14 @@ type MyReturnType<T extends (...args: any) => any> = T extends (
 	: {};
 
 declare class Ruta<
-	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
 	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > {
 	/**
 	 * Type only, no runtime equivalent.
 	 */
-	ROUTES: Prettify<TRoutes>;
+	ROUTES: { [K in keyof TRoutes]: Prettify<Pick<TRoutes[K], keyof Route>> };
 
 	constructor(options: RutaOptions<TRoutes, TContext>);
 
@@ -185,8 +203,8 @@ declare function define_route<
 declare function create_routes(): RouteTree;
 
 type RouteTree<
-	TPaths extends string = string,
-	TRoutes extends Record<string, Route> = {},
+	TPaths extends string = '',
+	TRoutes extends Record<string, InternalRoute> = {},
 > = {
 	// add<const TChildren extends RouteOptions[]>(
 	// 	parent: true,
@@ -205,15 +223,17 @@ type RouteTree<
 	add<
 		const TParentPath extends TPaths,
 		const TChildren extends RouteOptions[],
-		_ParentRoute extends Route = TRoutes[TParentPath],
+		_ParentRoute extends InternalRoute = TRoutes[TParentPath],
 	>(
 		parent: TParentPath,
 		children: TChildren,
 	): RouteTree<
 		TPaths | JoinPaths<TParentPath, TChildren[number]['path']>,
 		TRoutes & {
-			[C in TChildren[number] as JoinPaths<TParentPath, C['path']>]: Route<
-				JoinPaths<TParentPath, C['path']>,
+			[C in TChildren[number] as C['path'] extends ''
+				? TParentPath
+				: JoinPaths<TParentPath, C['path']>]: InternalRoute<
+				C['path'] extends '' ? TParentPath : JoinPaths<TParentPath, C['path']>,
 				_ParentRoute['params'] & MyReturnType<NonNullable<C['parse_params']>>,
 				_ParentRoute['search'] & MyReturnType<NonNullable<C['parse_search']>>
 			>;

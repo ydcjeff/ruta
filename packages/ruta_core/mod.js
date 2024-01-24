@@ -2,9 +2,14 @@ import 'urlpattern-polyfill';
 
 import { BROWSER, DEV } from 'esm-env';
 import {
-	PAGES_SYMBOL,
-	RESOLVED_SYMBOL,
-	PATTERN_SYMBOL,
+	SYMBOL_PAGE,
+	SYMBOL_RESOLVED,
+	SYMBOL_PATTERN,
+	SYMBOL_ERROR,
+	SYMBOL_LOAD,
+	SYMBOL_PARAMS_FN,
+	SYMBOL_SEARCH_FN,
+	SYMBOL_HAS_LAYOUT,
 	IMMUTABLE_EMPTY_ARRAY,
 	IMMUTABLE_EMPTY_OBJ,
 	FAKE_ORIGIN,
@@ -55,7 +60,7 @@ class Ruta {
 	constructor(options) {
 		this.#base = normalise_base(options.base || '');
 		this.#context = options.context || {};
-		this.#routes = /** @type {any} */ (options.routes);
+		this.#routes = options.routes;
 
 		this.#hook_args = {
 			to: this.#to,
@@ -181,8 +186,8 @@ class Ruta {
 
 			if (route) {
 				const pattern =
-					route[PATTERN_SYMBOL] ||
-					(route[PATTERN_SYMBOL] = new URLPattern({
+					route[SYMBOL_PATTERN] ||
+					(route[SYMBOL_PATTERN] = new URLPattern({
 						pathname: join_paths(path),
 					}));
 
@@ -196,9 +201,17 @@ class Ruta {
 
 					this.#to.href = href;
 					this.#to.path = path;
-					this.#to.params = route.parse_params?.(groups) || groups;
-					this.#to.search =
-						route.parse_search?.(url.searchParams) || IMMUTABLE_EMPTY_OBJ;
+
+					this.#to.params = groups;
+					for (const fn of route[SYMBOL_PARAMS_FN]) {
+						Object.assign(groups, fn(groups));
+					}
+
+					this.#to.search = {};
+					for (const fn of route[SYMBOL_SEARCH_FN]) {
+						Object.assign(this.#to.search, fn(url.searchParams));
+					}
+
 					this.#to.pages = IMMUTABLE_EMPTY_ARRAY;
 
 					// call before navigate hooks if available
@@ -210,8 +223,8 @@ class Ruta {
 
 					/** @type {Promise<{ default: RegisteredComponent }>[]} */
 					let promises = [];
-					if (!route[RESOLVED_SYMBOL]) {
-						promises = route[PAGES_SYMBOL].map((v) => {
+					if (!route[SYMBOL_RESOLVED]) {
+						promises = route[SYMBOL_PAGE].map((v) => {
 							if (typeof v === 'function') {
 								return v();
 							}
@@ -222,15 +235,17 @@ class Ruta {
 					// fetch components and run load fn parallel
 					const [pages] = await Promise.all([
 						Promise.all(promises),
-						route.load?.(this.#hook_args),
+						Promise.all(
+							route[SYMBOL_LOAD].map((load) => load(this.#hook_args)),
+						),
 					]);
 
-					if (!route[RESOLVED_SYMBOL]) {
-						route[PAGES_SYMBOL] = pages.map((v) => v.default);
-						route[RESOLVED_SYMBOL] = true;
+					if (!route[SYMBOL_RESOLVED]) {
+						route[SYMBOL_PAGE] = pages.map((v) => v.default);
+						route[SYMBOL_RESOLVED] = true;
 					}
 
-					this.#to.pages = route[PAGES_SYMBOL];
+					this.#to.pages = route[SYMBOL_PAGE];
 
 					// call after navigate hooks if available
 					if (this.#after_hooks.length) {
@@ -258,28 +273,72 @@ function create_routes() {
 	const routes = {};
 	return {
 		add(parent_path, children) {
+			const parent = routes[parent_path];
 			for (const child of /** @type {InternalRoute[]} */ (
 				/** @type {unknown} */ (children)
 			)) {
-				const parent = routes[parent_path];
-				const child_path = join_paths(parent_path, child.path);
+				const resolved_child_path =
+					child.path === '' ? parent_path : join_paths(parent_path, child.path);
 
-				if (parent_path === child_path && parent) {
-					parent[PAGES_SYMBOL].unshift(child.page);
+				const parent_pages = parent?.[SYMBOL_PAGE] || [];
+				const parent_errors = parent?.[SYMBOL_ERROR] || [];
+				const parent_loads = parent?.[SYMBOL_LOAD] || [];
+				const parent_params_fn = parent?.[SYMBOL_PARAMS_FN] || [];
+				const parent_search_fn = parent?.[SYMBOL_SEARCH_FN] || [];
+				const parent_has_layout = parent?.[SYMBOL_HAS_LAYOUT];
+
+				if (resolved_child_path === parent_path) {
+					parent_pages.push(child.page);
+					child.error && parent_errors.push(child.error);
+					child.load && parent_loads.push(child.load);
+					child.parse_params && parent_params_fn.push(child.parse_params);
+					child.parse_search && parent_search_fn.push(child.parse_search);
+					parent && (parent[SYMBOL_HAS_LAYOUT] = true);
 				} else {
-					if (!child[PAGES_SYMBOL]) {
-						child[PAGES_SYMBOL] = [child.page];
-					}
-					if (parent) {
-						child[PAGES_SYMBOL].push(parent.page);
-					}
-					routes[child_path] = child;
+					child[SYMBOL_PAGE] = get_private_route_field(
+						parent_pages,
+						child.page,
+						parent_has_layout,
+					);
+					child[SYMBOL_ERROR] = get_private_route_field(
+						parent_errors,
+						child.error,
+						parent_has_layout,
+					);
+					child[SYMBOL_LOAD] = get_private_route_field(
+						parent_loads,
+						child.load,
+						parent_has_layout,
+					);
+					child[SYMBOL_PARAMS_FN] = get_private_route_field(
+						parent_params_fn,
+						child.parse_params,
+						parent_has_layout,
+					);
+					child[SYMBOL_SEARCH_FN] = get_private_route_field(
+						parent_search_fn,
+						child.parse_search,
+						parent_has_layout,
+					);
+
+					routes[resolved_child_path] = child;
 				}
 			}
 			return /** @type {any} */ (this);
 		},
-		done: () => /** @type {any} */ (routes),
+		done: () => routes,
 	};
+}
+
+/**
+ * @param {any[]} parent
+ * @param {any} target
+ * @param {boolean} has_layout
+ */
+function get_private_route_field(parent, target, has_layout = false) {
+	const ret = parent.slice(0, has_layout ? -1 : undefined);
+	target && ret.push(target);
+	return ret;
 }
 
 const HTTP_RE = /https?:\/\/[^\/]*/;

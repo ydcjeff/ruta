@@ -3,8 +3,8 @@ import type {
 	Ruta,
 	RegisteredRouter,
 	AnyObj,
-	Route,
 	RegisteredRoutes,
+	InternalRoute,
 } from 'ruta-core';
 
 export * from 'ruta-core';
@@ -18,7 +18,7 @@ export function use_route<
 >(route?: T): RegisteredRoutes[T];
 
 export class RutaVue<
-	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
 	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > extends Ruta<TRoutes, TContext, TPaths> {

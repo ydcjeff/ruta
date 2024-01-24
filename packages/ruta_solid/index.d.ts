@@ -3,8 +3,8 @@ import type {
 	Ruta,
 	RegisteredRouter,
 	AnyObj,
-	Route,
 	RegisteredRoutes,
+	InternalRoute,
 } from 'ruta-core';
 
 export * from 'ruta-core';
@@ -12,7 +12,7 @@ export * from 'ruta-core';
 export const RouterContext: Context<RutaSolid>;
 
 export class RutaSolid<
-	TRoutes extends Record<string, Route> = Record<string, Route>,
+	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
 	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > extends Ruta<TRoutes, TContext, TPaths> {}
