@@ -7,6 +7,7 @@ import {
 	PATTERN_SYMBOL,
 	IMMUTABLE_EMPTY_ARRAY,
 	IMMUTABLE_EMPTY_OBJ,
+	FAKE_ORIGIN,
 } from './constants.js';
 
 export { Ruta, define_route, create_routes };
@@ -74,7 +75,7 @@ class Ruta {
 
 				e.intercept({
 					handler: async () => {
-						await this.#match_route(destination.url);
+						await this.#match_route(this.to_href(destination.url));
 					},
 				});
 			});
@@ -83,12 +84,12 @@ class Ruta {
 
 	/** @type {TRuta['go']} */
 	async go(to = /** @type {any} */ (BROWSER ? location.href : '/')) {
-		const url = this.to_href(to);
+		const href = this.to_href(to);
 		if (BROWSER) {
 			// @ts-expect-error experimental API
-			await navigation.navigate(url);
+			await navigation.navigate(href);
 		} else {
-			await this.#match_route(url);
+			await this.#match_route(href);
 		}
 
 		if (!this.#ok) {
@@ -100,9 +101,8 @@ class Ruta {
 	to_href(to) {
 		if (typeof to === 'string') {
 			return join_paths(
-				'',
 				this.#base,
-				to.replace(location.origin, '').replace(this.#base, ''),
+				to.replace(HTTP_RE, '').replace(this.#base, ''),
 			);
 		}
 
@@ -118,7 +118,6 @@ class Ruta {
 		}
 		const has_search = Object.keys(search).length;
 		return join_paths(
-			'',
 			this.#base,
 			`${path}${has_search ? `?${new URLSearchParams(search)}` : ''}`,
 		);
@@ -163,15 +162,13 @@ class Ruta {
 	/**
 	 * Do route matching. This also calls the respective navigation hooks.
 	 *
-	 * @param {string} url
+	 * The parameter `href` should be absolute href string.
+	 * `this.to_href` method can be used to get that.
+	 *
+	 * @param {string} href `/base/pathname?search#hash`
 	 */
-	async #match_route(url) {
-		let { href, searchParams } = new URL(url);
-
-		href = href
-			.replace(origin, '')
-			.replace(this.#base, '')
-			.replace(MULTI_SLASH_RE, '/');
+	async #match_route(href) {
+		href = href.replace(this.#base, '').replace(MULTI_SLASH_RE, '/');
 
 		// exit if navigating to the same URL
 		if (this.#from.href === href) {
@@ -186,10 +183,11 @@ class Ruta {
 				const pattern =
 					route[PATTERN_SYMBOL] ||
 					(route[PATTERN_SYMBOL] = new URLPattern({
-						pathname: join_paths('', this.#base, path),
+						pathname: join_paths(path),
 					}));
 
-				const match = pattern.exec(url);
+				const url = new URL(href, FAKE_ORIGIN);
+				const match = pattern.exec(url.href);
 
 				if (match) {
 					const {
@@ -200,7 +198,7 @@ class Ruta {
 					this.#to.path = path;
 					this.#to.params = route.parse_params?.(groups) || groups;
 					this.#to.search =
-						route.parse_search?.(searchParams) || IMMUTABLE_EMPTY_OBJ;
+						route.parse_search?.(url.searchParams) || IMMUTABLE_EMPTY_OBJ;
 					this.#to.pages = IMMUTABLE_EMPTY_ARRAY;
 
 					// call before navigate hooks if available
@@ -264,7 +262,7 @@ function create_routes() {
 				/** @type {unknown} */ (children)
 			)) {
 				const parent = routes[parent_path];
-				const child_path = join_paths('', parent_path, child.path);
+				const child_path = join_paths(parent_path, child.path);
 
 				if (parent_path === child_path && parent) {
 					parent[PAGES_SYMBOL].unshift(child.page);
@@ -284,14 +282,16 @@ function create_routes() {
 	};
 }
 
+const HTTP_RE = /https?:\/\/[^\/]*/;
 const MULTI_SLASH_RE = /\/{2,}/g;
 /**
- * Joins the given `paths`, and replaces many `/` with single `/`.
+ * Joins the given `paths`, and replaces many `/` with single `/`. The returned
+ * string is always prefixed with `/`.
  *
  * @param {...string} paths
  */
 function join_paths(...paths) {
-	return paths.join('/').replace(MULTI_SLASH_RE, '/');
+	return ('/' + paths.join('/')).replace(MULTI_SLASH_RE, '/');
 }
 
 /**

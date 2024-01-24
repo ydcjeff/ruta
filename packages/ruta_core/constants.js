@@ -7,3 +7,4 @@ export const IMMUTABLE_EMPTY_ARRAY = /** @type {any[]} */ (
 	/** @type {unknown} */ (Object.freeze([]))
 );
 export const IMMUTABLE_EMPTY_OBJ = Object.freeze({});
+export const FAKE_ORIGIN = 'http://a.b';
