@@ -15,15 +15,7 @@ class RutaSolid extends Ruta {
 	constructor(options) {
 		super(options);
 
-		const [route, set_route] = createStore(
-			/** @type {import('./index').Route} */ ({
-				href: '/',
-				path: '/',
-				params: {},
-				search: {},
-				pages: [],
-			}),
-		);
+		const [route, set_route] = createStore();
 
 		this.route = route;
 		this.after(({ to }) => set_route(to));

@@ -10,15 +10,7 @@ const ROUTER_SYMBOL = Symbol();
 const ROUTE_SYMBOL = Symbol();
 
 class RutaVue extends Ruta {
-	#route = shallowReactive(
-		/** @type {import('./index').Route} */ ({
-			href: '/',
-			pages: [],
-			params: {},
-			path: '/',
-			search: {},
-		}),
-	);
+	#route = shallowReactive({});
 
 	/** @param {import('./index').RutaOptions} opts */
 	constructor(opts) {

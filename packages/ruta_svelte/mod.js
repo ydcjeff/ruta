@@ -11,19 +11,15 @@ const ROUTER_SYMBOL = Symbol();
 const ROUTE_SYMBOL = Symbol();
 
 class RutaSvelte extends Ruta {
-	#route = writable(
-		/** @type {import('./index').Route} */ ({
-			href: '/',
-			pages: [],
-			params: {},
-			path: '/',
-			search: {},
-		}),
-	);
+	#route = writable();
 
 	/** @param {import('./index').RutaOptions} opts */
 	constructor(opts) {
 		super(opts);
+
+		this.after(({ to }) => {
+			this.#route.set(to);
+		});
 	}
 
 	install() {

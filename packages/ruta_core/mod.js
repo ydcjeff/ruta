@@ -87,7 +87,7 @@ class Ruta {
 		const href = this.to_href(to);
 		if (BROWSER) {
 			// @ts-expect-error experimental API
-			await navigation.navigate(href);
+			await navigation.navigate(href).finished;
 		} else {
 			await this.#match_route(href);
 		}
