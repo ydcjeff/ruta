@@ -84,6 +84,40 @@ class Ruta {
 					},
 				});
 			});
+
+			/** @type {number} */
+			let timeout;
+			for (const event of /** @type {const} */ ([
+				'touchstart',
+				'pointerover',
+				'pointerdown',
+			])) {
+				addEventListener(event, (e) => {
+					const anchor = /** @type {HTMLElement} */ (e.target).closest('a');
+					const ruta_preload =
+						anchor?.dataset.rutaPreload ||
+						document.documentElement.dataset.rutaPreload;
+					if (
+						!anchor ||
+						anchor.hasAttribute('download') ||
+						anchor.getAttribute('rel')?.includes('external') ||
+						anchor.getAttribute('target')?.includes('_blank') ||
+						((event === 'pointerdown' || event === 'touchstart') &&
+							ruta_preload !== 'tap') ||
+						(event === 'pointerover' && ruta_preload !== 'hover')
+					) {
+						return;
+					}
+
+					cancelIdleCallback(timeout);
+					timeout = requestIdleCallback(
+						() => {
+							this.#match_route(this.to_href(anchor.href), true);
+						},
+						{ timeout: 50 },
+					);
+				});
+			}
 		}
 	}
 
@@ -171,8 +205,9 @@ class Ruta {
 	 * `this.to_href` method can be used to get that.
 	 *
 	 * @param {string} href `/base/pathname?search#hash`
+	 * @param {boolean} [preload]
 	 */
-	async #match_route(href) {
+	async #match_route(href, preload = false) {
 		const href_without_base = href
 			.replace(this.#base, '')
 			.replace(MULTI_SLASH_RE, '/');
@@ -254,13 +289,17 @@ class Ruta {
 
 					this.#to.pages = route[SYMBOL_PAGE];
 
-					// call after navigate hooks if available
-					if (this.#after_hooks.length) {
-						await Promise.all(this.#after_hooks.map((h) => h(this.#hook_args)));
+					// only update `from` route if not preload since it is not navigation
+					if (!preload) {
+						// call after navigate hooks if available
+						if (this.#after_hooks.length) {
+							await Promise.all(
+								this.#after_hooks.map((h) => h(this.#hook_args)),
+							);
+						}
+						// store old route
+						this.#from = { ...this.#to };
 					}
-
-					// store old route
-					this.#from = this.#to;
 					return;
 				}
 			}
