@@ -261,7 +261,6 @@ class Ruta {
 
 					// store old route
 					this.#from = this.#to;
-					console.log(route);
 					return;
 				}
 			}
