@@ -173,38 +173,45 @@ class Ruta {
 	 * @param {string} href `/base/pathname?search#hash`
 	 */
 	async #match_route(href) {
-		href = href.replace(this.#base, '').replace(MULTI_SLASH_RE, '/');
+		const href_without_base = href
+			.replace(this.#base, '')
+			.replace(MULTI_SLASH_RE, '/');
 
 		// exit if navigating to the same URL
-		if (this.#from.href === href) {
+		if (this.#from.href === href_without_base) {
 			return;
 		}
 
 		const routes = this.#routes;
 		for (const path in routes) {
 			const route = routes[path];
+			const is_dynamic_path = path.includes(':');
 
 			if (route) {
-				const pattern =
-					route[SYMBOL_PATTERN] ||
-					(route[SYMBOL_PATTERN] = new URLPattern({
+				if (is_dynamic_path && !route[SYMBOL_PATTERN]) {
+					route[SYMBOL_PATTERN] = new URLPattern({
 						pathname: join_paths(path),
-					}));
+					});
+				}
 
-				const url = new URL(href, FAKE_ORIGIN);
-				const match = pattern.exec(url.href);
+				const url = new URL(href_without_base, FAKE_ORIGIN);
+				const match = is_dynamic_path
+					? route[SYMBOL_PATTERN]?.exec(url.href)
+					: path === url.pathname;
 
 				if (match) {
-					const {
-						pathname: { groups },
-					} = match;
-
-					this.#to.href = href;
+					// can't use url.href since it contains origin
+					this.#to.href = href_without_base;
 					this.#to.path = path;
 
-					this.#to.params = groups;
-					for (const fn of route[SYMBOL_PARAMS_FN]) {
-						Object.assign(groups, fn(groups));
+					if (match !== true) {
+						const {
+							pathname: { groups },
+						} = match;
+						this.#to.params = groups;
+						for (const fn of route[SYMBOL_PARAMS_FN]) {
+							Object.assign(groups, fn(groups));
+						}
 					}
 
 					this.#to.search = {};
@@ -254,11 +261,12 @@ class Ruta {
 
 					// store old route
 					this.#from = this.#to;
+					console.log(route);
 					return;
 				}
 			}
 		}
-		DEV && warn(`Unmatched ${href}`);
+		DEV && warn(`Unmatched ${href_without_base}`);
 	}
 }
 

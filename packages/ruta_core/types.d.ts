@@ -89,7 +89,7 @@ type ResolvedRouteOptions<
 	[SYMBOL_LOAD]: Required<RouteOptions['load'][]>;
 	[SYMBOL_PARAMS_FN]: Required<RouteOptions['parse_params'][]>;
 	[SYMBOL_SEARCH_FN]: Required<RouteOptions['parse_search'][]>;
-	[SYMBOL_PATTERN]: URLPattern;
+	[SYMBOL_PATTERN]?: URLPattern;
 	[SYMBOL_RESOLVED]: boolean;
 	[SYMBOL_HAS_LAYOUT]: boolean;
 	/** Type only, no runtime equivalent. */
