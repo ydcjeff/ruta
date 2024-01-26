@@ -85,13 +85,14 @@ class Ruta {
 				});
 			});
 
+			const events = /** @type {const} */ ([
+				'pointerover',
+				'touchstart',
+				'pointerdown',
+			]);
 			/** @type {number} */
 			let timeout;
-			for (const event of /** @type {const} */ ([
-				'touchstart',
-				'pointerover',
-				'pointerdown',
-			])) {
+			for (const event of events) {
 				addEventListener(event, (e) => {
 					const anchor = /** @type {HTMLElement} */ (e.target).closest('a');
 					const ruta_preload =
@@ -102,9 +103,9 @@ class Ruta {
 						anchor.hasAttribute('download') ||
 						anchor.getAttribute('rel')?.includes('external') ||
 						anchor.getAttribute('target')?.includes('_blank') ||
-						((event === 'pointerdown' || event === 'touchstart') &&
+						((event === events[1] || event === events[2]) &&
 							ruta_preload !== 'tap') ||
-						(event === 'pointerover' && ruta_preload !== 'hover')
+						(event === events[0] && ruta_preload !== 'hover')
 					) {
 						return;
 					}

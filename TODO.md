@@ -1,0 +1,10 @@
+- ~~run the matched routes~~
+- ~~layout~~
+- ~~Type safe optional / required search~~
+- ~~static vs URLPattern~~
+- ~~preload on hover~~
+- make optional `parse_params` type safe
+- error handling
+- redirect
+- tests, ssr too
+- route aborting
