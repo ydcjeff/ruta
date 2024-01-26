@@ -2,7 +2,6 @@
 // so reexport the necessary ones for public API
 export {
 	AnyObj,
-	InternalRoute,
 	NavigationHook,
 	NavigationHookArgs,
 	Register,
@@ -10,6 +9,7 @@ export {
 	RegisteredRoutes,
 	Route,
 	RouteOptions,
+	ResolvedRouteOptions,
 	Ruta,
 	RutaOptions,
 	create_routes,

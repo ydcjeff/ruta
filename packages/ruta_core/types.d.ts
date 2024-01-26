@@ -73,21 +73,22 @@ type Route<
 	pages: RegisteredComponent[];
 };
 
-type InternalRoute<
+type ResolvedRouteOptions<
 	TAllPath extends string = string,
 	TAllParams extends AnyObj = {},
 	TAllSearch extends AnyObj = {},
-> = Route<TAllPath, TAllParams, TAllSearch> &
-	RouteOptions & {
-		[SYMBOL_PAGE]: RouteOptions['page'][];
-		[SYMBOL_ERROR]: Required<RouteOptions['error'][]>;
-		[SYMBOL_LOAD]: Required<RouteOptions['load'][]>;
-		[SYMBOL_PARAMS_FN]: Required<RouteOptions['parse_params'][]>;
-		[SYMBOL_SEARCH_FN]: Required<RouteOptions['parse_search'][]>;
-		[SYMBOL_PATTERN]: URLPattern;
-		[SYMBOL_RESOLVED]: boolean;
-		[SYMBOL_HAS_LAYOUT]: boolean;
-	};
+> = RouteOptions & {
+	[SYMBOL_PAGE]: RouteOptions['page'][];
+	[SYMBOL_ERROR]: Required<RouteOptions['error'][]>;
+	[SYMBOL_LOAD]: Required<RouteOptions['load'][]>;
+	[SYMBOL_PARAMS_FN]: Required<RouteOptions['parse_params'][]>;
+	[SYMBOL_SEARCH_FN]: Required<RouteOptions['parse_search'][]>;
+	[SYMBOL_PATTERN]: URLPattern;
+	[SYMBOL_RESOLVED]: boolean;
+	[SYMBOL_HAS_LAYOUT]: boolean;
+	/** Type only, no runtime equivalent. */
+	ROUTE: Route<TAllPath, TAllParams, TAllSearch>;
+};
 
 type RouteOptions<
 	TPath extends string = string,
@@ -101,12 +102,12 @@ type RouteOptions<
 		| RegisteredComponent
 		| (() => Promise<{ default: RegisteredComponent }>);
 	load?: NavigationHook;
-	parse_params?: (
+	parse_params?(
 		params: _ParsedParams,
-	) => TParams extends Record<keyof _ParsedParams, any>
+	): TParams extends Record<keyof _ParsedParams, any>
 		? TParams
 		: 'parse_params must return an object';
-	parse_search?: (search: URLSearchParams) => TSearch;
+	parse_search?(search: URLSearchParams): TSearch;
 };
 
 type NavigationHookArgs = {
@@ -123,7 +124,10 @@ type NavigationHookArgs = {
 type NavigationHook = (args: NavigationHookArgs) => MaybePromise<void>;
 
 interface RutaOptions<
-	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
+	TRoutes extends Record<string, ResolvedRouteOptions> = Record<
+		string,
+		ResolvedRouteOptions
+	>,
 	TContext extends AnyObj = AnyObj,
 > {
 	routes: TRoutes;
@@ -151,14 +155,15 @@ type MyReturnType<T extends (...args: any) => any> = T extends (
 	: {};
 
 declare class Ruta<
-	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
+	TRoutes extends Record<string, ResolvedRouteOptions> = Record<
+		string,
+		ResolvedRouteOptions
+	>,
 	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > {
-	/**
-	 * Type only, no runtime equivalent.
-	 */
-	ROUTES: { [K in keyof TRoutes]: Prettify<Pick<TRoutes[K], keyof Route>> };
+	/** Type only, no runtime equivalent. */
+	ROUTES: { [K in keyof TRoutes]: TRoutes[K]['ROUTE'] };
 
 	constructor(options: RutaOptions<TRoutes, TContext>);
 
@@ -204,26 +209,12 @@ declare function create_routes(): RouteTree;
 
 type RouteTree<
 	TPaths extends string = '',
-	TRoutes extends Record<string, InternalRoute> = {},
+	TRoutes extends Record<string, ResolvedRouteOptions> = {},
 > = {
-	// add<const TChildren extends RouteOptions[]>(
-	// 	parent: true,
-	// 	children: TChildren,
-	// ): RouteTree<
-	// 	TChildren[number]['path'],
-	// 	{
-	// 		[C in TChildren[number] as C['path']]: Route<
-	// 			C,
-	// 			C['path'],
-	// 			MyReturnType<NonNullable<C['parse_params']>>,
-	// 			MyReturnType<NonNullable<C['parse_search']>>
-	// 		>;
-	// 	}
-	// >;
 	add<
 		const TParentPath extends TPaths,
 		const TChildren extends RouteOptions[],
-		_ParentRoute extends InternalRoute = TRoutes[TParentPath],
+		_ParentRoute extends ResolvedRouteOptions = TRoutes[TParentPath],
 	>(
 		parent: TParentPath,
 		children: TChildren,
@@ -232,10 +223,12 @@ type RouteTree<
 		TRoutes & {
 			[C in TChildren[number] as C['path'] extends ''
 				? TParentPath
-				: JoinPaths<TParentPath, C['path']>]: InternalRoute<
+				: JoinPaths<TParentPath, C['path']>]: ResolvedRouteOptions<
 				C['path'] extends '' ? TParentPath : JoinPaths<TParentPath, C['path']>,
-				_ParentRoute['params'] & MyReturnType<NonNullable<C['parse_params']>>,
-				_ParentRoute['search'] & MyReturnType<NonNullable<C['parse_search']>>
+				_ParentRoute['ROUTE']['params'] &
+					MyReturnType<NonNullable<C['parse_params']>>,
+				_ParentRoute['ROUTE']['search'] &
+					MyReturnType<NonNullable<C['parse_search']>>
 			>;
 		}
 	>;

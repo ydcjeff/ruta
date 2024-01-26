@@ -4,7 +4,7 @@ import type {
 	RegisteredRouter,
 	AnyObj,
 	RegisteredRoutes,
-	InternalRoute,
+	ResolvedRouteOptions,
 } from 'ruta-core';
 import type { Readable } from 'svelte/store';
 
@@ -17,7 +17,10 @@ export function get_route<
 >(route?: T): Readable<RegisteredRoutes[T]>;
 
 export class RutaSvelte<
-	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
+	TRoutes extends Record<string, ResolvedRouteOptions> = Record<
+		string,
+		ResolvedRouteOptions
+	>,
 	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > extends Ruta<TRoutes, TContext, TPaths> {

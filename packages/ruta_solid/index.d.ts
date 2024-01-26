@@ -4,7 +4,7 @@ import type {
 	RegisteredRouter,
 	AnyObj,
 	RegisteredRoutes,
-	InternalRoute,
+	ResolvedRouteOptions,
 } from 'ruta-core';
 
 export * from 'ruta-core';
@@ -12,7 +12,10 @@ export * from 'ruta-core';
 export const RouterContext: Context<RutaSolid>;
 
 export class RutaSolid<
-	TRoutes extends Record<string, InternalRoute> = Record<string, InternalRoute>,
+	TRoutes extends Record<string, ResolvedRouteOptions> = Record<
+		string,
+		ResolvedRouteOptions
+	>,
 	TContext extends AnyObj = AnyObj,
 	TPaths extends string = keyof TRoutes & string,
 > extends Ruta<TRoutes, TContext, TPaths> {}

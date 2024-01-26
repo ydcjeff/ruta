@@ -26,7 +26,7 @@ class Ruta {
 	/** @type {AbortController} */
 	#controller = new AbortController();
 
-	/** @type {Record<string, InternalRoute>} */
+	/** @type {Record<string, ResolvedRouteOptions>} */
 	#routes = {};
 
 	/** @type {Route} */
@@ -269,12 +269,12 @@ function define_route(route) {
 
 /** @type {import('./types').create_routes} */
 function create_routes() {
-	/** @type {Record<string, InternalRoute>} */
+	/** @type {Record<string, ResolvedRouteOptions>} */
 	const routes = {};
 	return {
 		add(parent_path, children) {
 			const parent = routes[parent_path];
-			for (const child of /** @type {InternalRoute[]} */ (
+			for (const child of /** @type {ResolvedRouteOptions[]} */ (
 				/** @type {unknown} */ (children)
 			)) {
 				const resolved_child_path =
@@ -375,7 +375,7 @@ function warn(msg) {
  * @typedef {import('./types').Ruta} TRuta
  * @typedef {import('./types').Route} Route
  * @typedef {import('./types').RutaOptions} RutaOptions
- * @typedef {import('./types').InternalRoute} InternalRoute
+ * @typedef {import('./types').ResolvedRouteOptions} ResolvedRouteOptions
  * @typedef {import('./types').NavigationHook} NavigationHook
  * @typedef {import('./types').NavigationHookArgs} NavigationHookArgs
  * @typedef {import('./types').RegisteredComponent} RegisteredComponent
