@@ -43,10 +43,14 @@ type ParseParams<T extends string> = {
 		: never]: string;
 };
 
+type HasRequiredProperties<T extends AnyObj> = Required<{
+	[K in keyof T]: undefined extends T[K] ? false : true;
+}>[keyof T];
+
 type ToOptions<
 	TPath extends string = string,
-	_AllParams = RegisteredRouter['ROUTES'][TPath]['params'],
-	_AllSearch = RegisteredRouter['ROUTES'][TPath]['search'],
+	_AllParams extends AnyObj = RegisteredRouter['ROUTES'][TPath]['params'],
+	_AllSearch extends AnyObj = RegisteredRouter['ROUTES'][TPath]['search'],
 > = {
 	path: TPath;
 } & (keyof _AllParams extends never
@@ -54,7 +58,9 @@ type ToOptions<
 	: { params: _AllParams }) &
 	(keyof _AllSearch extends never
 		? { search?: never }
-		: { search: _AllSearch });
+		: HasRequiredProperties<_AllSearch> extends false
+			? { search?: _AllSearch }
+			: { search: _AllSearch });
 
 type Route<
 	TAllPath extends string = string,
