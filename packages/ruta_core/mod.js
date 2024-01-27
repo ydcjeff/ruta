@@ -246,13 +246,13 @@ class Ruta {
 						} = match;
 						this.#to.params = groups;
 						for (const fn of route[SYMBOL_PARAMS_FN]) {
-							Object.assign(groups, fn(groups));
+							Object.assign(groups, fn?.(groups));
 						}
 					}
 
 					this.#to.search = {};
 					for (const fn of route[SYMBOL_SEARCH_FN]) {
-						Object.assign(this.#to.search, fn(url.searchParams));
+						Object.assign(this.#to.search, fn?.(url.searchParams));
 					}
 
 					this.#to.pages = IMMUTABLE_EMPTY_ARRAY;
@@ -279,7 +279,7 @@ class Ruta {
 					const [pages] = await Promise.all([
 						Promise.all(promises),
 						Promise.all(
-							route[SYMBOL_LOAD].map((load) => load(this.#hook_args)),
+							route[SYMBOL_LOAD].map((load) => load?.(this.#hook_args)),
 						),
 					]);
 
@@ -336,10 +336,10 @@ function create_routes() {
 
 				if (resolved_child_path === parent_path) {
 					parent_pages.push(child.page);
-					child.error && parent_errors.push(child.error);
-					child.load && parent_loads.push(child.load);
-					child.parse_params && parent_params_fn.push(child.parse_params);
-					child.parse_search && parent_search_fn.push(child.parse_search);
+					parent_errors.push(child.error);
+					parent_loads.push(child.load);
+					parent_params_fn.push(child.parse_params);
+					parent_search_fn.push(child.parse_search);
 					parent && (parent[SYMBOL_HAS_LAYOUT] = true);
 				} else {
 					child[SYMBOL_PAGE] = get_private_route_field(
@@ -384,7 +384,7 @@ function create_routes() {
  */
 function get_private_route_field(parent, target, has_layout = false) {
 	const ret = parent.slice(0, has_layout ? -1 : undefined);
-	target && ret.push(target);
+	ret.push(target);
 	return ret;
 }
 

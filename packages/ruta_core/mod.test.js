@@ -8,43 +8,48 @@ test(create_routes.name, () => {
 				path: '/',
 				page: '/',
 				error: '/',
+				parse_params() {
+					return {};
+				},
+				parse_search() {
+					return {};
+				},
 			}),
 		])
 		.add('/', [
 			define_route({
 				path: '',
 				page: '',
+				load() {},
 			}),
 			define_route({
-				path: 'child-1',
-				page: 'child-1',
-				error: 'child-1',
+				path: 'tests',
+				page: 'tests',
+				error: 'tests',
 			}),
 		])
-		.add('/child-1', [
-			define_route({
-				path: 'grand-child-1',
-				page: 'grand-child-1',
-			}),
-		])
-		.add('/', [
-			define_route({
-				path: 'users',
-				page: 'users',
-			}),
-		])
-		.add('/users', [
-			define_route({
-				path: ':user_id',
-				page: ':user_id',
-			}),
-			define_route({
-				path: '',
-				page: '',
-			}),
+		.add('/tests', [
 			define_route({
 				path: '/',
 				page: '/',
+				error: '/',
+				parse_search() {
+					return {};
+				},
+			}),
+			define_route({
+				path: ':test_id',
+				page: ':test_id',
+				error: ':test_id',
+				load() {},
+				parse_params(params) {
+					return { test_id: +params.test_id };
+				},
+			}),
+			define_route({
+				path: '',
+				page: '',
+				load() {},
 			}),
 		])
 		.done();

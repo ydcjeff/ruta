@@ -37,11 +37,11 @@ type Split<T extends string> = T extends `${infer S}/`
 			? [...Split<L>, ...Split<R>]
 			: [T];
 
-type ParseParams<T extends string> = {
-	[K in Split<T>[number] as K extends `:${infer Param}`
+type ParseParams<T extends string> = Prettify<{
+	[K in Split<T>[number] as K extends `${infer _}:${infer Param}`
 		? Param
 		: never]: string;
-};
+}>;
 
 type HasRequiredProperties<T extends AnyObj> = Required<{
 	[K in keyof T]: undefined extends T[K] ? false : true;
@@ -49,8 +49,8 @@ type HasRequiredProperties<T extends AnyObj> = Required<{
 
 type ToOptions<
 	TPath extends string = string,
-	_AllParams extends AnyObj = RegisteredRouter['ROUTES'][TPath]['params'],
-	_AllSearch extends AnyObj = RegisteredRouter['ROUTES'][TPath]['search'],
+	_AllParams extends AnyObj = RegisteredRoutes[TPath]['params'],
+	_AllSearch extends AnyObj = RegisteredRoutes[TPath]['search'],
 > = {
 	path: TPath;
 } & (keyof _AllParams extends never
@@ -85,10 +85,10 @@ type ResolvedRouteOptions<
 	TAllSearch extends AnyObj = {},
 > = RouteOptions & {
 	[SYMBOL_PAGE]: RouteOptions['page'][];
-	[SYMBOL_ERROR]: Required<RouteOptions['error'][]>;
-	[SYMBOL_LOAD]: Required<RouteOptions['load'][]>;
-	[SYMBOL_PARAMS_FN]: Required<RouteOptions['parse_params'][]>;
-	[SYMBOL_SEARCH_FN]: Required<RouteOptions['parse_search'][]>;
+	[SYMBOL_ERROR]: RouteOptions['error'][];
+	[SYMBOL_LOAD]: RouteOptions['load'][];
+	[SYMBOL_PARAMS_FN]: RouteOptions['parse_params'][];
+	[SYMBOL_SEARCH_FN]: RouteOptions['parse_search'][];
 	[SYMBOL_PATTERN]?: URLPattern;
 	[SYMBOL_RESOLVED]: boolean;
 	[SYMBOL_HAS_LAYOUT]: boolean;
