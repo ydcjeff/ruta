@@ -70,7 +70,6 @@ class Ruta {
 		};
 
 		if (BROWSER) {
-			// @ts-expect-error experimental API
 			window.navigation?.addEventListener('navigate', (e) => {
 				const { canIntercept, downloadRequest, hashChange, destination } = e;
 
@@ -125,10 +124,8 @@ class Ruta {
 	/** @type {TRuta['go']} */
 	async go(to = /** @type {any} */ (BROWSER ? location.href : '/')) {
 		const href = this.to_href(to);
-		// @ts-expect-error experimental API
 		if (BROWSER && window.navigation) {
-			// @ts-expect-error experimental API
-			await navigation.navigate(href).finished;
+			await window.navigation.navigate(href).finished;
 		} else {
 			await this.#match_route(href);
 		}

@@ -110,9 +110,7 @@ type RouteOptions<
 	load?: NavigationHook;
 	parse_params?(
 		params: _ParsedParams,
-	): TParams extends Record<keyof _ParsedParams, any>
-		? TParams
-		: 'parse_params must return an object';
+	): TParams extends Record<keyof _ParsedParams, any> ? TParams : _ParsedParams;
 	parse_search?(search: URLSearchParams): TSearch;
 };
 
