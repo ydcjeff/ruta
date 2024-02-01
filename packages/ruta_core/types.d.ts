@@ -70,19 +70,21 @@ type ParseParamKeys<T extends string> = keyof {
 	>[number] as K extends `:${infer Param}` ? Param : never]: string;
 };
 
-type ParseParams<T extends string> = Prettify<
+type ParseParams<
+	T extends string,
+	_ParsedParamKeys extends string = ParseParamKeys<T>,
+	_OptionalParams extends string = Extract<
+		_ParsedParamKeys,
+		`${string}${'*' | '?'}`
+	>,
+	_RequiredParams extends string = Exclude<_ParsedParamKeys, _OptionalParams>,
+> = Prettify<
 	{
-		[K in ParseParamKeys<T> as K extends `${infer Param}+`
-			? Param
-			: K extends `${string}${'*' | '?'}`
-				? never
-				: K]: K extends `${string}+` ? string[] : string;
+		[K in _RequiredParams as K extends `${infer Param}+` ? Param : K]: string;
 	} & {
-		[K in ParseParamKeys<T> as K extends `${infer Param}${'*' | '?'}`
+		[K in _OptionalParams as K extends `${infer Param}${'*' | '?'}`
 			? Param
-			: K extends `${string}+`
-				? never
-				: K]?: K extends `${string}*` ? string[] : string;
+			: never]?: string;
 	}
 >;
 

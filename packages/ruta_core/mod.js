@@ -151,7 +151,13 @@ class Ruta {
 		} = to;
 		if (Object.keys(params).length) {
 			for (const key in params) {
-				/** @type {string} */ (path) = path.replace(`:${key}`, params[key]);
+				const param_value = params[key];
+				/** @type {string} */ (path) = path
+					// try replacing with modifiers first
+					.replace(`:${key}*`, param_value)
+					.replace(`:${key}+`, param_value)
+					.replace(`:${key}?`, param_value)
+					.replace(`:${key}`, param_value);
 			}
 		}
 		const has_search = Object.keys(search).length;
@@ -282,7 +288,7 @@ class Ruta {
 					]);
 
 					if (!route[SYMBOL_RESOLVED]) {
-						route[SYMBOL_PAGE] = pages.map((v) => v.default);
+						route[SYMBOL_PAGE] = pages.map((v) => (v.default ? v.default : v));
 						route[SYMBOL_RESOLVED] = true;
 					}
 
