@@ -29,19 +29,62 @@ type JoinPaths<
 
 type StaticPaths<T> = T extends `${infer S}:${infer U}` ? never : T;
 
-type Split<T extends string> = T extends `${infer S}/`
-	? [...Split<S>]
-	: T extends `/${infer S}`
-		? [...Split<S>]
-		: T extends `${infer L}/${infer R}`
-			? [...Split<L>, ...Split<R>]
+type Split<
+	T extends string,
+	TSplitter extends string,
+> = T extends `${infer S}${TSplitter}`
+	? [...Split<S, TSplitter>]
+	: T extends `${TSplitter}${infer S}`
+		? [...Split<S, TSplitter>]
+		: T extends `${infer L}${TSplitter}${infer R}`
+			? [...Split<L, TSplitter>, ...Split<R, TSplitter>]
 			: [T];
 
-type ParseParams<T extends string> = Prettify<{
-	[K in Split<T>[number] as K extends `${infer _}:${infer Param}`
-		? Param
-		: never]: string;
-}>;
+type ParamSeparators =
+	| '~'
+	| '!'
+	| '@'
+	| '#'
+	| '$'
+	| '%'
+	| '^'
+	| '&'
+	| '('
+	| ')'
+	| '-'
+	| '='
+	| '['
+	| ']'
+	| '{'
+	| '}'
+	| ';'
+	| '"'
+	| "'"
+	| '.'
+	| ',';
+
+type ParseParamKeys<T extends string> = keyof {
+	[K in Split<
+		Split<T, '/'>[number],
+		ParamSeparators
+	>[number] as K extends `:${infer Param}` ? Param : never]: string;
+};
+
+type ParseParams<T extends string> = Prettify<
+	{
+		[K in ParseParamKeys<T> as K extends `${infer Param}+`
+			? Param
+			: K extends `${string}${'*' | '?'}`
+				? never
+				: K]: K extends `${string}+` ? string[] : string;
+	} & {
+		[K in ParseParamKeys<T> as K extends `${infer Param}${'*' | '?'}`
+			? Param
+			: K extends `${string}+`
+				? never
+				: K]?: K extends `${string}*` ? string[] : string;
+	}
+>;
 
 type HasRequiredProperties<T extends AnyObj> = Required<{
 	[K in keyof T]: undefined extends T[K] ? false : true;
@@ -55,7 +98,9 @@ type ToOptions<
 	path: TPath;
 } & (keyof _AllParams extends never
 	? { params?: never }
-	: { params: _AllParams }) &
+	: HasRequiredProperties<_AllParams> extends false
+		? { params?: _AllParams }
+		: { params: _AllParams }) &
 	(keyof _AllSearch extends never
 		? { search?: never }
 		: HasRequiredProperties<_AllSearch> extends false
