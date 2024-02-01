@@ -1,4 +1,4 @@
-import type { App, Component } from 'vue';
+import type { App, Component, DefineComponent } from 'vue';
 import type {
 	Ruta,
 	RegisteredRouter,
@@ -30,6 +30,6 @@ export class RutaVue<
 
 declare module 'ruta-core' {
 	interface Register {
-		component: Component;
+		component: Component | DefineComponent;
 	}
 }
