@@ -218,7 +218,7 @@ class Ruta {
 			.replace(MULTI_SLASH_RE, '/');
 
 		// exit if navigating to the same URL
-		if (this.#from.href === href_without_base) {
+		if (this.#from.href === href) {
 			return;
 		}
 
@@ -241,7 +241,7 @@ class Ruta {
 
 				if (match) {
 					// can't use url.href since it contains origin
-					this.#to.href = href_without_base;
+					this.#to.href = href;
 					this.#to.path = path;
 
 					if (match !== true) {
@@ -252,6 +252,9 @@ class Ruta {
 						for (const fn of route[SYMBOL_PARAMS_FN]) {
 							Object.assign(groups, fn?.(groups));
 						}
+					} else {
+						// reset params
+						this.#to.params = IMMUTABLE_EMPTY_OBJ;
 					}
 
 					this.#to.search = {};
@@ -309,7 +312,7 @@ class Ruta {
 				}
 			}
 		}
-		DEV && warn(`Unmatched ${href_without_base}`);
+		DEV && warn(`Unmatched ${href}`);
 	}
 }
 
