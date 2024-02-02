@@ -22,7 +22,7 @@
 	},
 	"dependencies": {
 		"esm-env": "^1.0.0",
-		"urlpattern-polyfill": "9.0.0"
+		"urlpattern-polyfill": "10.0.0"
 	},
 	"scripts": {
 		"typecheck": "tsc"
