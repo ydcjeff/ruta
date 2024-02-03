@@ -228,15 +228,15 @@ class Ruta {
 		let captured_error = null,
 			captured_index = -1;
 		const routes = this.#routes;
-		for (const path in routes) {
-			const route = routes[path];
-			const is_dynamic_path = path.includes(':');
+		for (const full_pathname in routes) {
+			const route = routes[full_pathname];
+			const is_dynamic_path = full_pathname.includes(':');
 
 			if (!route) continue;
 
 			if (is_dynamic_path && !route[KEY_URL_PATTERN]) {
 				route[KEY_URL_PATTERN] = new URLPattern({
-					pathname: join_paths(path),
+					pathname: join_paths(full_pathname),
 				});
 			}
 
@@ -253,13 +253,13 @@ class Ruta {
 			const url = new URL(href_without_base, FAKE_ORIGIN);
 			const match = is_dynamic_path
 				? url_pattern?.exec(url.href)
-				: path === url.pathname;
+				: full_pathname === url.pathname;
 
 			if (!match) continue;
 
 			// can't use url.href since it contains origin
 			this.#to.href = href;
-			this.#to.path = path;
+			this.#to.path = full_pathname;
 
 			if (match !== true) {
 				try {
@@ -311,6 +311,7 @@ class Ruta {
 				}
 			}
 
+			// fetch components and run load fn parallel
 			const [resolved_pages, load_results] = await Promise.allSettled([
 				are_pages_resolved
 					? IMMUTABLE_EMPTY_ARRAY
@@ -333,7 +334,7 @@ class Ruta {
 
 			if (!are_pages_resolved && resolved_pages.status === 'fulfilled') {
 				route[KEY_PAGES] = pages = resolved_pages.value.map(
-					(v) => v.default ?? v,
+					(v) => v.default || v,
 				);
 				route[KEY_PAGES_RESOLVED] = true;
 			}
@@ -342,6 +343,13 @@ class Ruta {
 				this.#to.error = captured_error;
 				this.#to.pages = pages.slice(0, captured_index);
 				this.#to.pages.push(errors[1] || errors[0]);
+				if (DEV && !errors[1] && !errors[0]) {
+					error(
+						`"${captured_error}" occurred.\n` +
+							'But, there is no error component. ' +
+							`Consider providing error component in this ${full_pathname} route or its parent routes.`,
+					);
+				}
 			} else {
 				this.#to.pages = pages;
 			}
@@ -401,7 +409,7 @@ function create_routes() {
 						child.page,
 						parent_has_layout,
 					);
-					child[KEY_ERRORS] = [child.error ?? parent_errors[0]];
+					child[KEY_ERRORS] = [child.error || parent_errors[0]];
 					child[KEY_LOAD_FNS] = get_private_route_field(
 						parent_loads,
 						child.load,
@@ -466,6 +474,14 @@ function normalise_base(base) {
 /** @param {string} msg */
 function warn(msg) {
 	console.warn(`[ruta warn]: ${msg}`);
+}
+
+class RutaError extends Error {
+	name = 'RutaError';
+}
+/** @param {string} msg */
+function error(msg) {
+	throw new RutaError(msg);
 }
 
 /**
