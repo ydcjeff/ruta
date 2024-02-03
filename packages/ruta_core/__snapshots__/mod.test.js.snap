@@ -10,11 +10,10 @@ exports[`create_routes 1`] = `
     "path": "/",
     Symbol(page): [
       "/",
-      "",
+      "/index",
     ],
     Symbol(error): [
       "/",
-      undefined,
     ],
     Symbol(load): [
       undefined,
@@ -31,18 +30,17 @@ exports[`create_routes 1`] = `
     Symbol(has_layout): true,
   },
   "/tests": {
-    "error": "tests",
-    "page": "tests",
+    "error": "/tests",
+    "page": "/tests",
     "path": "tests",
     Symbol(page): [
       "/",
-      "tests",
-      "",
+      "/tests",
+      "/tests/index",
     ],
     Symbol(error): [
-      "/",
-      "tests",
-      undefined,
+      "/tests",
+      "/tests/index",
     ],
     Symbol(load): [
       undefined,
@@ -62,19 +60,16 @@ exports[`create_routes 1`] = `
     Symbol(has_layout): true,
   },
   "/tests/": {
-    "error": "/",
-    "page": "/",
+    "page": "/tests/",
     "parse_search": [Function],
     "path": "/",
     Symbol(page): [
       "/",
-      "tests",
-      "/",
+      "/tests",
+      "/tests/",
     ],
     Symbol(error): [
-      "/",
-      "tests",
-      "/",
+      "/tests",
     ],
     Symbol(load): [
       undefined,
@@ -93,20 +88,17 @@ exports[`create_routes 1`] = `
     ],
   },
   "/tests/:test_id": {
-    "error": ":test_id",
     "load": [Function],
-    "page": ":test_id",
+    "page": "/tests/:test_id",
     "parse_params": [Function],
     "path": ":test_id",
     Symbol(page): [
       "/",
-      "tests",
-      ":test_id",
+      "/tests",
+      "/tests/:test_id",
     ],
     Symbol(error): [
-      "/",
-      "tests",
-      ":test_id",
+      "/tests",
     ],
     Symbol(load): [
       undefined,
