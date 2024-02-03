@@ -1,13 +1,13 @@
 import { URLPattern } from 'urlpattern-polyfill';
 import {
-	SYMBOL_ERROR,
-	SYMBOL_HAS_LAYOUT,
-	SYMBOL_LOAD,
-	SYMBOL_PAGE,
-	SYMBOL_PARAMS_FN,
-	SYMBOL_PATTERN,
-	SYMBOL_RESOLVED,
-	SYMBOL_SEARCH_FN,
+	KEY_ERRORS,
+	KEY_HAS_LAYOUT,
+	KEY_LOAD_FNS,
+	KEY_PAGES,
+	KEY_PARAMS_FNS,
+	KEY_URL_PATTERN,
+	KEY_PAGES_RESOLVED,
+	KEY_SEARCH_FNS,
 } from './constants.js';
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
@@ -124,6 +124,8 @@ type Route<
 	search: TAllSearch;
 	/** Resolved matched pages. */
 	pages: RegisteredComponent[];
+	/** Error occurred during route navigation. */
+	error: unknown;
 };
 
 type ResolvedRouteOptions<
@@ -131,14 +133,14 @@ type ResolvedRouteOptions<
 	TAllParams extends AnyObj = {},
 	TAllSearch extends AnyObj = {},
 > = RouteOptions & {
-	[SYMBOL_PAGE]: RouteOptions['page'][];
-	[SYMBOL_ERROR]: RouteOptions['error'][];
-	[SYMBOL_LOAD]: RouteOptions['load'][];
-	[SYMBOL_PARAMS_FN]: RouteOptions['parse_params'][];
-	[SYMBOL_SEARCH_FN]: RouteOptions['parse_search'][];
-	[SYMBOL_PATTERN]?: URLPattern;
-	[SYMBOL_RESOLVED]: boolean;
-	[SYMBOL_HAS_LAYOUT]: boolean;
+	[KEY_PAGES]: RouteOptions['page'][];
+	[KEY_ERRORS]: [parent?: RouteOptions['error'], own?: RouteOptions['error']];
+	[KEY_LOAD_FNS]: RouteOptions['load'][];
+	[KEY_PARAMS_FNS]: RouteOptions['parse_params'][];
+	[KEY_SEARCH_FNS]: RouteOptions['parse_search'][];
+	[KEY_URL_PATTERN]?: URLPattern;
+	[KEY_PAGES_RESOLVED]: boolean;
+	[KEY_HAS_LAYOUT]: boolean;
 	/** Type only, no runtime equivalent. */
 	ROUTE: Route<TAllPath, TAllParams, TAllSearch>;
 };
@@ -151,9 +153,7 @@ type RouteOptions<
 > = {
 	path: TPath;
 	page: RegisteredComponent | (() => Promise<{ default: RegisteredComponent }>);
-	error?:
-		| RegisteredComponent
-		| (() => Promise<{ default: RegisteredComponent }>);
+	error?: RegisteredComponent;
 	load?: NavigationHook;
 	parse_params?(
 		params: _ParsedParams,

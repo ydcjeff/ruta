@@ -5,7 +5,6 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
 	build: {
 		target: 'esnext',
-		minify: false,
 	},
 	plugins: [vue()],
 });

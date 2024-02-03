@@ -2,14 +2,14 @@ import 'urlpattern-polyfill';
 
 import { BROWSER, DEV } from 'esm-env';
 import {
-	SYMBOL_PAGE,
-	SYMBOL_RESOLVED,
-	SYMBOL_PATTERN,
-	SYMBOL_ERROR,
-	SYMBOL_LOAD,
-	SYMBOL_PARAMS_FN,
-	SYMBOL_SEARCH_FN,
-	SYMBOL_HAS_LAYOUT,
+	KEY_PAGES,
+	KEY_PAGES_RESOLVED,
+	KEY_URL_PATTERN,
+	KEY_ERRORS,
+	KEY_LOAD_FNS,
+	KEY_PARAMS_FNS,
+	KEY_SEARCH_FNS,
+	KEY_HAS_LAYOUT,
 	IMMUTABLE_EMPTY_ARRAY,
 	IMMUTABLE_EMPTY_OBJ,
 	FAKE_ORIGIN,
@@ -36,6 +36,7 @@ class Ruta {
 		params: IMMUTABLE_EMPTY_OBJ,
 		path: '',
 		search: IMMUTABLE_EMPTY_OBJ,
+		error: null,
 	};
 	/** @type {Route} */
 	#to = {
@@ -44,6 +45,7 @@ class Ruta {
 		params: IMMUTABLE_EMPTY_OBJ,
 		path: '/',
 		search: IMMUTABLE_EMPTY_OBJ,
+		error: null,
 	};
 
 	// hooks
@@ -222,95 +224,140 @@ class Ruta {
 			return;
 		}
 
+		/** @type {unknown} */
+		let captured_error = null,
+			captured_index = -1;
 		const routes = this.#routes;
 		for (const path in routes) {
 			const route = routes[path];
 			const is_dynamic_path = path.includes(':');
 
-			if (route) {
-				if (is_dynamic_path && !route[SYMBOL_PATTERN]) {
-					route[SYMBOL_PATTERN] = new URLPattern({
-						pathname: join_paths(path),
-					});
+			if (!route) continue;
+
+			if (is_dynamic_path && !route[KEY_URL_PATTERN]) {
+				route[KEY_URL_PATTERN] = new URLPattern({
+					pathname: join_paths(path),
+				});
+			}
+
+			let {
+				[KEY_PAGES]: pages,
+				[KEY_ERRORS]: errors,
+				[KEY_LOAD_FNS]: load_fns,
+				[KEY_PARAMS_FNS]: params_fns,
+				[KEY_URL_PATTERN]: url_pattern,
+				[KEY_PAGES_RESOLVED]: are_pages_resolved,
+				[KEY_SEARCH_FNS]: search_fns,
+			} = route;
+
+			const url = new URL(href_without_base, FAKE_ORIGIN);
+			const match = is_dynamic_path
+				? url_pattern?.exec(url.href)
+				: path === url.pathname;
+
+			if (!match) continue;
+
+			// can't use url.href since it contains origin
+			this.#to.href = href;
+			this.#to.path = path;
+
+			if (match !== true) {
+				try {
+					// prettier-ignore
+					const { pathname: { groups } } = match;
+					this.#to.params = groups;
+					for (const [i, fn] of params_fns.entries()) {
+						captured_index = i;
+						Object.assign(groups, fn?.(groups));
+					}
+				} catch (error) {
+					captured_error = error;
 				}
+			} else {
+				// reset params
+				this.#to.params = IMMUTABLE_EMPTY_OBJ;
+			}
 
-				const url = new URL(href_without_base, FAKE_ORIGIN);
-				const match = is_dynamic_path
-					? route[SYMBOL_PATTERN]?.exec(url.href)
-					: path === url.pathname;
+			try {
+				this.#to.search = {};
+				for (const [i, fn] of search_fns.entries()) {
+					if (!captured_error) {
+						captured_index = i;
+					}
+					Object.assign(this.#to.search, fn?.(url.searchParams));
+				}
+			} catch (error) {
+				captured_error = error;
+			}
 
-				if (match) {
-					// can't use url.href since it contains origin
-					this.#to.href = href;
-					this.#to.path = path;
+			this.#to.pages = IMMUTABLE_EMPTY_ARRAY;
 
-					if (match !== true) {
-						const {
-							pathname: { groups },
-						} = match;
-						this.#to.params = groups;
-						for (const fn of route[SYMBOL_PARAMS_FN]) {
-							Object.assign(groups, fn?.(groups));
+			// call before navigate hooks if available
+			if (this.#before_hooks.length) {
+				const results = await Promise.allSettled(
+					this.#before_hooks.map((hook) =>
+						// wrap in async IIFE to catch all sync/async errors
+						(async () => hook(this.#hook_args))(),
+					),
+				);
+				if (!captured_error) {
+					for (const [i, result] of results.entries()) {
+						if (result.status === 'rejected') {
+							captured_index = i;
+							captured_error = result.reason;
+							break;
 						}
-					} else {
-						// reset params
-						this.#to.params = IMMUTABLE_EMPTY_OBJ;
 					}
-
-					this.#to.search = {};
-					for (const fn of route[SYMBOL_SEARCH_FN]) {
-						Object.assign(this.#to.search, fn?.(url.searchParams));
-					}
-
-					this.#to.pages = IMMUTABLE_EMPTY_ARRAY;
-
-					// call before navigate hooks if available
-					if (this.#before_hooks.length) {
-						await Promise.all(
-							this.#before_hooks.map((h) => h(this.#hook_args)),
-						);
-					}
-
-					/** @type {Promise<{ default: RegisteredComponent }>[]} */
-					let promises = [];
-					if (!route[SYMBOL_RESOLVED]) {
-						promises = route[SYMBOL_PAGE].map((v) => {
-							if (typeof v === 'function') {
-								return v();
-							}
-							return v;
-						});
-					}
-
-					// fetch components and run load fn parallel
-					const [pages] = await Promise.all([
-						Promise.all(promises),
-						Promise.all(
-							route[SYMBOL_LOAD].map((load) => load?.(this.#hook_args)),
-						),
-					]);
-
-					if (!route[SYMBOL_RESOLVED]) {
-						route[SYMBOL_PAGE] = pages.map((v) => (v.default ? v.default : v));
-						route[SYMBOL_RESOLVED] = true;
-					}
-
-					this.#to.pages = route[SYMBOL_PAGE];
-
-					// only update `from` route if not preload since it is not navigation
-					if (!preload) {
-						// call after navigate hooks if available
-						if (this.#after_hooks.length) {
-							await Promise.all(
-								this.#after_hooks.map((h) => h(this.#hook_args)),
-							);
-						}
-						// store old route
-						this.#from = { ...this.#to };
-					}
-					return;
 				}
 			}
+
+			const [resolved_pages, load_results] = await Promise.allSettled([
+				are_pages_resolved
+					? IMMUTABLE_EMPTY_ARRAY
+					: Promise.all(pages.map((v) => (typeof v === 'function' ? v() : v))),
+				Promise.allSettled(
+					// wrap in async IIFE to catch all sync/async errors
+					load_fns.map((load) => (async () => load?.(this.#hook_args))()),
+				),
+			]);
+
+			if (!captured_error && load_results.status === 'fulfilled') {
+				for (const [i, result] of load_results.value.entries()) {
+					if (result.status === 'rejected') {
+						captured_index = i;
+						captured_error = result.reason;
+						break;
+					}
+				}
+			}
+
+			if (!are_pages_resolved && resolved_pages.status === 'fulfilled') {
+				route[KEY_PAGES] = pages = resolved_pages.value.map(
+					(v) => v.default ?? v,
+				);
+				route[KEY_PAGES_RESOLVED] = true;
+			}
+
+			if (captured_error) {
+				this.#to.error = captured_error;
+				this.#to.pages = pages.slice(0, captured_index);
+				this.#to.pages.push(errors[1] || errors[0]);
+			} else {
+				this.#to.pages = pages;
+			}
+
+			// only update `from` route if not preload since it is not navigation
+			if (!preload) {
+				// call after navigate hooks if available
+				if (this.#after_hooks.length) {
+					await Promise.all(
+						this.#after_hooks.map((hook) => hook(this.#hook_args)),
+					);
+				}
+				// store old route
+				this.#from = { ...this.#to };
+			}
+			return;
 		}
 		DEV && warn(`Unmatched ${href}`);
 	}
@@ -334,42 +381,38 @@ function create_routes() {
 				const resolved_child_path =
 					child.path === '' ? parent_path : join_paths(parent_path, child.path);
 
-				const parent_pages = parent?.[SYMBOL_PAGE] || [];
-				const parent_errors = parent?.[SYMBOL_ERROR] || [];
-				const parent_loads = parent?.[SYMBOL_LOAD] || [];
-				const parent_params_fn = parent?.[SYMBOL_PARAMS_FN] || [];
-				const parent_search_fn = parent?.[SYMBOL_SEARCH_FN] || [];
-				const parent_has_layout = parent?.[SYMBOL_HAS_LAYOUT];
+				const parent_pages = parent?.[KEY_PAGES] || [];
+				const parent_errors = parent?.[KEY_ERRORS] || [];
+				const parent_loads = parent?.[KEY_LOAD_FNS] || [];
+				const parent_params_fn = parent?.[KEY_PARAMS_FNS] || [];
+				const parent_search_fn = parent?.[KEY_SEARCH_FNS] || [];
+				const parent_has_layout = parent?.[KEY_HAS_LAYOUT];
 
 				if (resolved_child_path === parent_path) {
 					parent_pages.push(child.page);
-					parent_errors.push(child.error);
+					child.error && (parent_errors[1] = child.error);
 					parent_loads.push(child.load);
 					parent_params_fn.push(child.parse_params);
 					parent_search_fn.push(child.parse_search);
-					parent && (parent[SYMBOL_HAS_LAYOUT] = true);
+					parent && (parent[KEY_HAS_LAYOUT] = true);
 				} else {
-					child[SYMBOL_PAGE] = get_private_route_field(
+					child[KEY_PAGES] = get_private_route_field(
 						parent_pages,
 						child.page,
 						parent_has_layout,
 					);
-					child[SYMBOL_ERROR] = get_private_route_field(
-						parent_errors,
-						child.error,
-						parent_has_layout,
-					);
-					child[SYMBOL_LOAD] = get_private_route_field(
+					child[KEY_ERRORS] = [child.error ?? parent_errors[0]];
+					child[KEY_LOAD_FNS] = get_private_route_field(
 						parent_loads,
 						child.load,
 						parent_has_layout,
 					);
-					child[SYMBOL_PARAMS_FN] = get_private_route_field(
+					child[KEY_PARAMS_FNS] = get_private_route_field(
 						parent_params_fn,
 						child.parse_params,
 						parent_has_layout,
 					);
-					child[SYMBOL_SEARCH_FN] = get_private_route_field(
+					child[KEY_SEARCH_FNS] = get_private_route_field(
 						parent_search_fn,
 						child.parse_search,
 						parent_has_layout,
