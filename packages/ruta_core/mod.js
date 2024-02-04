@@ -245,9 +245,9 @@ class Ruta {
 				[KEY_ERRORS]: errors,
 				[KEY_LOAD_FNS]: load_fns,
 				[KEY_PARAMS_FNS]: params_fns,
+				[KEY_SEARCH_FNS]: search_fns,
 				[KEY_URL_PATTERN]: url_pattern,
 				[KEY_PAGES_RESOLVED]: are_pages_resolved,
-				[KEY_SEARCH_FNS]: search_fns,
 			} = route;
 
 			const url = new URL(href_without_base, FAKE_ORIGIN);
@@ -311,19 +311,22 @@ class Ruta {
 				}
 			}
 
-			// fetch components and run load fn parallel
-			const [resolved_pages, load_results] = await Promise.allSettled([
+			// fetch components and run load functions parallel
+			const [resolved_pages, load_results] = await Promise.all([
 				are_pages_resolved
 					? IMMUTABLE_EMPTY_ARRAY
-					: Promise.all(pages.map((v) => (typeof v === 'function' ? v() : v))),
+					: // Promise.all is used to throw error automatically
+						// if the page components cannot be fetched.
+						Promise.all(pages.map((v) => (typeof v === 'function' ? v() : v))),
+				// Promise.allSettled is used to capture the error
 				Promise.allSettled(
 					// wrap in async IIFE to catch all sync/async errors
 					load_fns.map((load) => (async () => load?.(this.#hook_args))()),
 				),
 			]);
 
-			if (!captured_error && load_results.status === 'fulfilled') {
-				for (const [i, result] of load_results.value.entries()) {
+			if (!captured_error) {
+				for (const [i, result] of load_results.entries()) {
 					if (result.status === 'rejected') {
 						captured_index = i;
 						captured_error = result.reason;
@@ -332,10 +335,8 @@ class Ruta {
 				}
 			}
 
-			if (!are_pages_resolved && resolved_pages.status === 'fulfilled') {
-				route[KEY_PAGES] = pages = resolved_pages.value.map(
-					(v) => v.default || v,
-				);
+			if (!are_pages_resolved) {
+				route[KEY_PAGES] = pages = resolved_pages.map((v) => v.default || v);
 				route[KEY_PAGES_RESOLVED] = true;
 			}
 
