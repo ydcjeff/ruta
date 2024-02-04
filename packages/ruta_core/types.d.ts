@@ -27,48 +27,16 @@ type JoinPaths<
 	Tail extends string,
 > = CleanPath<`${Head}/${Tail}`>;
 
-type StaticPaths<T> = T extends `${infer S}:${infer U}` ? never : T;
+type StaticPaths<T> = T extends `${string}:${string}` ? never : T;
 
-type Split<
-	T extends string,
-	TSplitter extends string,
-> = T extends `${infer S}${TSplitter}`
-	? [...Split<S, TSplitter>]
-	: T extends `${TSplitter}${infer S}`
-		? [...Split<S, TSplitter>]
-		: T extends `${infer L}${TSplitter}${infer R}`
-			? [...Split<L, TSplitter>, ...Split<R, TSplitter>]
-			: [T];
+type ParamSeparators = ' ' | '~' | '@' | '-' | '.' | ',' | '/';
 
-type ParamSeparators =
-	| '~'
-	| '!'
-	| '@'
-	| '#'
-	| '$'
-	| '%'
-	| '^'
-	| '&'
-	| '('
-	| ')'
-	| '-'
-	| '='
-	| '['
-	| ']'
-	| '{'
-	| '}'
-	| ';'
-	| '"'
-	| "'"
-	| '.'
-	| ',';
-
-type ParseParamKeys<T extends string> = keyof {
-	[K in Split<
-		Split<T, '/'>[number],
-		ParamSeparators
-	>[number] as K extends `:${infer Param}` ? Param : never]: string;
-};
+type ParseParamKeys<T extends string> =
+	T extends `${string}:${infer Param}${ParamSeparators}${infer Rest}`
+		? ParseParamKeys<`:${Param}`> | ParseParamKeys<Rest>
+		: T extends `${string}:${infer Param}`
+			? Param
+			: never;
 
 type ParseParams<
 	T extends string,
