@@ -19,28 +19,26 @@ test(create_routes.name, () => {
 		.add('/', [
 			define_route({
 				path: '',
-				page: '',
+				page: '/index',
 				load() {},
 			}),
 			define_route({
 				path: 'tests',
-				page: 'tests',
-				error: 'tests',
+				page: '/tests',
+				error: '/tests',
 			}),
 		])
 		.add('/tests', [
 			define_route({
 				path: '/',
-				page: '/',
-				error: '/',
+				page: '/tests/',
 				parse_search() {
 					return {};
 				},
 			}),
 			define_route({
 				path: ':test_id',
-				page: ':test_id',
-				error: ':test_id',
+				page: '/tests/:test_id',
 				load() {},
 				parse_params(params) {
 					return { test_id: +params.test_id };
@@ -48,7 +46,8 @@ test(create_routes.name, () => {
 			}),
 			define_route({
 				path: '',
-				page: '',
+				page: '/tests/index',
+				error: '/tests/index',
 				load() {},
 			}),
 		])
