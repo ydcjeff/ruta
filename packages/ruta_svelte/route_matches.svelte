@@ -1,4 +1,6 @@
 <script context="module">
+	export const ROUTER_SYMBOL = Symbol();
+	export const ROUTE_SYMBOL = Symbol();
 	const DEPTH_SYMBOL = Symbol();
 </script>
 

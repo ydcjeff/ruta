@@ -1,4 +1,6 @@
 <script lang="ts">
+export const ROUTER_SYMBOL = Symbol();
+export const ROUTE_SYMBOL = Symbol();
 const DEPTH_SYMBOL: InjectionKey<number> = Symbol();
 </script>
 

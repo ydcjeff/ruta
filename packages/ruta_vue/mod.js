@@ -1,13 +1,10 @@
 import { inject, markRaw, readonly, shallowReactive } from 'vue';
 import { Ruta } from 'ruta-core';
+import { ROUTER_SYMBOL, ROUTE_SYMBOL } from './route_matches.vue';
 
 export * from 'ruta-core';
 export { default as RouteMatches } from './route_matches.vue';
 export { RutaVue, use_router, use_route };
-
-const ROUTER_SYMBOL = Symbol();
-
-const ROUTE_SYMBOL = Symbol();
 
 class RutaVue extends Ruta {
 	#route = shallowReactive({});
@@ -31,10 +28,14 @@ class RutaVue extends Ruta {
 	}
 }
 
+/** @type {import('./index').use_router} */
 function use_router() {
+	// @ts-expect-error
 	return inject(ROUTER_SYMBOL);
 }
 
+/** @type {import('./index').use_route} */
 function use_route() {
+	// @ts-expect-error
 	return inject(ROUTE_SYMBOL);
 }
