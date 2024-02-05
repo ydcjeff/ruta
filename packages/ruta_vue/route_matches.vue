@@ -1,12 +1,10 @@
 <script lang="ts">
-export const ROUTER_SYMBOL = Symbol();
-export const ROUTE_SYMBOL = Symbol();
 const DEPTH_SYMBOL: InjectionKey<number> = Symbol();
 </script>
 
 <script setup lang="ts">
 import { computed, inject, provide, type InjectionKey } from 'vue';
-import { use_route } from './mod.js';
+import { use_route } from 'ruta-vue';
 import RouteMatches from './route_matches.vue';
 
 const route = use_route();

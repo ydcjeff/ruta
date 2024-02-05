@@ -1,12 +1,13 @@
 import { Ruta } from 'ruta-core';
 import { getContext, setContext } from 'svelte';
 import { writable } from 'svelte/store';
-// @ts-expect-error
-import { ROUTER_SYMBOL, ROUTE_SYMBOL } from './route_matches.svelte';
 
 export * from 'ruta-core';
 export { RutaSvelte, get_route, get_router };
 export { default as RouteMatches } from './route_matches.svelte';
+
+const ROUTER_SYMBOL = Symbol();
+const ROUTE_SYMBOL = Symbol();
 
 class RutaSvelte extends Ruta {
 	#route = writable();

@@ -1,10 +1,12 @@
 import { inject, markRaw, readonly, shallowReactive } from 'vue';
 import { Ruta } from 'ruta-core';
-import { ROUTER_SYMBOL, ROUTE_SYMBOL } from './route_matches.vue';
 
 export * from 'ruta-core';
 export { default as RouteMatches } from './route_matches.vue';
 export { RutaVue, use_router, use_route };
+
+const ROUTER_SYMBOL = Symbol();
+const ROUTE_SYMBOL = Symbol();
 
 class RutaVue extends Ruta {
 	#route = shallowReactive({});

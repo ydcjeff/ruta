@@ -1,12 +1,10 @@
 <script context="module">
-	export const ROUTER_SYMBOL = Symbol();
-	export const ROUTE_SYMBOL = Symbol();
 	const DEPTH_SYMBOL = Symbol();
 </script>
 
 <script>
 	import { getContext, setContext } from 'svelte';
-	import { get_route } from './mod.js';
+	import { get_route } from 'ruta-svelte';
 
 	const route = get_route();
 	const index = getContext(DEPTH_SYMBOL) || 0;
